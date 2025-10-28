@@ -1,242 +1,227 @@
---// Modern Dark UI Library
-local Library = {}
-
+--// ModernMiniUI Library
+local ModernMiniUI = {}
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
+local UIS = game:GetService("UserInputService")
 
-function Library:CreateWindow(title)
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "ModernUILib"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.Parent = game:GetService("CoreGui")
+function ModernMiniUI:CreateWindow(title)
+	local ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.Name = "ModernMiniUI"
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.IgnoreGuiInset = true
+	ScreenGui.Parent = game:GetService("CoreGui")
 
-    local Main = Instance.new("Frame")
-    Main.Size = UDim2.new(0, 360, 0, 250)
-    Main.Position = UDim2.new(0.5, -180, 0.5, -125)
-    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Main.Active = true
-    Main.Draggable = true
-    Main.Parent = ScreenGui
+	local Main = Instance.new("Frame")
+	Main.Size = UDim2.new(0, 250, 0, 40)
+	Main.Position = UDim2.new(0.5, -125, 0.4, 0)
+	Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	Main.Active, Main.Draggable = true, true
+	Main.Parent = ScreenGui
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 8)
-    Corner.Parent = Main
+	local MainCorner = Instance.new("UICorner", Main)
+	MainCorner.CornerRadius = UDim.new(0, 10)
 
-    local TabBar = Instance.new("Frame")
-    TabBar.Size = UDim2.new(1, 0, 0, 30)
-    TabBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    TabBar.Parent = Main
+	local Title = Instance.new("TextLabel")
+	Title.Text = title or "Modern UI"
+	Title.Font = Enum.Font.GothamBold
+	Title.TextSize = 16
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.BackgroundTransparency = 1
+	Title.Size = UDim2.new(1, 0, 1, 0)
+	Title.Parent = Main
 
-    local TabCorner = Instance.new("UICorner")
-    TabCorner.CornerRadius = UDim.new(0, 8)
-    TabCorner.Parent = TabBar
+	local Content = Instance.new("Frame")
+	Content.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	Content.Size = UDim2.new(1, 0, 0, 0)
+	Content.Position = UDim2.new(0, 0, 1, 0)
+	Content.ClipsDescendants = true
+	Content.Parent = Main
 
-    local Layout = Instance.new("UIListLayout")
-    Layout.FillDirection = Enum.FillDirection.Horizontal
-    Layout.Padding = UDim.new(0, 5)
-    Layout.Parent = TabBar
+	local ContentCorner = Instance.new("UICorner", Content)
+	ContentCorner.CornerRadius = UDim.new(0, 10)
 
-    local TabContainer = Instance.new("Frame")
-    TabContainer.Size = UDim2.new(1, 0, 1, -30)
-    TabContainer.Position = UDim2.new(0, 0, 0, 30)
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.Parent = Main
+	local Layout = Instance.new("UIListLayout", Content)
+	Layout.Padding = UDim.new(0, 6)
+	Layout.FillDirection = Enum.FillDirection.Vertical
 
-    local Tabs = {}
+	local open = false
+	Title.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
+			open = not open
+			local goal = open and UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y + 10) or UDim2.new(1, 0, 0, 0)
+			TweenService:Create(Content, TweenInfo.new(0.25), {Size = goal}):Play()
+		end
+	end)
 
-    function Tabs:CreateTab(tabName)
-        local TabButton = Instance.new("TextButton")
-        TabButton.Text = tabName
-        TabButton.Size = UDim2.new(0, 100, 1, 0)
-        TabButton.Font = Enum.Font.GothamBold
-        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TabButton.BackgroundTransparency = 1
-        TabButton.Parent = TabBar
+	local folder = {}
 
-        local Page = Instance.new("ScrollingFrame")
-        Page.Size = UDim2.new(1, -10, 1, -10)
-        Page.Position = UDim2.new(0, 5, 0, 5)
-        Page.BackgroundTransparency = 1
-        Page.ScrollBarThickness = 4
-        Page.Visible = false
-        Page.Parent = TabContainer
+	-- Button
+	function folder:AddButton(opt)
+		local btn = Instance.new("TextButton")
+		btn.Text = opt.text or "Button"
+		btn.Size = UDim2.new(1, -10, 0, 30)
+		btn.Position = UDim2.new(0, 5, 0, 0)
+		btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.Font = Enum.Font.Gotham
+		btn.TextSize = 14
+		btn.Parent = Content
+		Instance.new("UICorner", btn)
 
-        local PageLayout = Instance.new("UIListLayout")
-        PageLayout.Padding = UDim.new(0, 5)
-        PageLayout.Parent = Page
+		btn.MouseButton1Click:Connect(function()
+			if opt.callback then pcall(opt.callback) end
+		end)
+		return btn
+	end
 
-        TabButton.MouseButton1Click:Connect(function()
-            for _, frame in pairs(TabContainer:GetChildren()) do
-                if frame:IsA("ScrollingFrame") then
-                    frame.Visible = false
-                end
-            end
-            Page.Visible = true
-        end)
+	-- Toggle
+	function folder:AddToggle(opt)
+		local tog = Instance.new("TextButton")
+		tog.Text = (opt.text or "Toggle") .. ": OFF"
+		tog.Size = UDim2.new(1, -10, 0, 30)
+		tog.Position = UDim2.new(0, 5, 0, 0)
+		tog.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		tog.TextColor3 = Color3.fromRGB(255, 255, 255)
+		tog.Font = Enum.Font.Gotham
+		tog.TextSize = 14
+		tog.Parent = Content
+		Instance.new("UICorner", tog)
 
-        -- Auto open first tab
-        if #TabContainer:GetChildren() == 1 then
-            Page.Visible = true
-        end
+		local state = false
+		function tog:Set(v)
+			state = v
+			tog.Text = (opt.text or "Toggle") .. ": " .. (state and "ON" or "OFF")
+			if opt.callback then pcall(opt.callback, state) end
+		end
 
-        local Elements = {}
+		tog.MouseButton1Click:Connect(function() tog:Set(not state) end)
+		return tog
+	end
 
-        function Elements:AddButton(info)
-            local Button = Instance.new("TextButton")
-            Button.Size = UDim2.new(1, -10, 0, 30)
-            Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            Button.Text = info.text or "Button"
-            Button.Font = Enum.Font.Gotham
-            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Button.Parent = Page
+	-- Dropdown
+	function folder:AddDropdown(opt)
+		local drop = Instance.new("TextButton")
+		drop.Text = opt.text or "Dropdown"
+		drop.Size = UDim2.new(1, -10, 0, 30)
+		drop.Position = UDim2.new(0, 5, 0, 0)
+		drop.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		drop.TextColor3 = Color3.fromRGB(255, 255, 255)
+		drop.Font = Enum.Font.Gotham
+		drop.TextSize = 14
+		drop.Parent = Content
+		Instance.new("UICorner", drop)
 
-            Instance.new("UICorner", Button)
+		local values = opt.values or {}
+		local selected = values[1] or "None"
 
-            Button.MouseButton1Click:Connect(function()
-                if info.callback then info.callback() end
-            end)
-        end
+		function drop:Set(v)
+			selected = v
+			drop.Text = (opt.text or "Dropdown") .. ": " .. tostring(v)
+			if opt.callback then pcall(opt.callback, v) end
+		end
 
-        function Elements:AddToggle(info)
-            local Toggle = Instance.new("TextButton")
-            Toggle.Size = UDim2.new(1, -10, 0, 30)
-            Toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            Toggle.Text = (info.text or "Toggle") .. ": OFF"
-            Toggle.Font = Enum.Font.Gotham
-            Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Toggle.Parent = Page
-            Instance.new("UICorner", Toggle)
+		function drop:Refresh(newValues)
+			values = newValues
+			if not table.find(values, selected) then
+				drop:Set(values[1] or "None")
+			end
+		end
 
-            local state = false
+		drop.MouseButton1Click:Connect(function()
+			local idx = table.find(values, selected) or 0
+			idx = idx + 1
+			if idx > #values then idx = 1 end
+			drop:Set(values[idx])
+		end)
 
-            function Toggle:Set(v)
-                state = v
-                Toggle.Text = (info.text or "Toggle") .. ": " .. (state and "ON" or "OFF")
-                if info.callback then info.callback(state) end
-            end
+		return drop
+	end
 
-            Toggle.MouseButton1Click:Connect(function()
-                Toggle:Set(not state)
-            end)
-            return Toggle
-        end
+	-- Slider
+	function folder:AddSlider(opt)
+		local frame = Instance.new("Frame")
+		frame.Size = UDim2.new(1, -10, 0, 35)
+		frame.Position = UDim2.new(0, 5, 0, 0)
+		frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		frame.Parent = Content
+		Instance.new("UICorner", frame)
 
-        function Elements:AddDropdown(info)
-            local Drop = Instance.new("TextButton")
-            Drop.Size = UDim2.new(1, -10, 0, 30)
-            Drop.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            Drop.Text = (info.text or "Dropdown") .. ": None"
-            Drop.Font = Enum.Font.Gotham
-            Drop.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Drop.Parent = Page
-            Instance.new("UICorner", Drop)
+		local label = Instance.new("TextLabel")
+		label.Text = (opt.text or "Slider") .. ": " .. tostring(opt.default or 0)
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 14
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.new(1, -10, 0, 15)
+		label.Position = UDim2.new(0, 5, 0, 0)
+		label.Parent = frame
 
-            local list = info.values or {}
-            local current = list[1] or "None"
+		local bar = Instance.new("Frame")
+		bar.Size = UDim2.new(1, -10, 0, 5)
+		bar.Position = UDim2.new(0, 5, 0, 20)
+		bar.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+		bar.Parent = frame
+		Instance.new("UICorner", bar)
 
-            function Drop:Set(v)
-                current = v
-                Drop.Text = (info.text or "Dropdown") .. ": " .. tostring(v)
-                if info.callback then info.callback(v) end
-            end
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new(0, 0, 1, 0)
+		fill.BackgroundColor3 = Color3.fromRGB(90, 170, 255)
+		fill.Parent = bar
+		Instance.new("UICorner", fill)
 
-            function Drop:Refresh(newList)
-                list = newList
-                if not table.find(list, current) then
-                    Drop:Set(list[1] or "None")
-                end
-            end
+		local min, max = opt.min or 0, opt.max or 100
+		local value = opt.default or min
 
-            Drop.MouseButton1Click:Connect(function()
-                local i = table.find(list, current) or 0
-                i = (i % #list) + 1
-                Drop:Set(list[i])
-            end)
-            return Drop
-        end
+		function frame:Set(v)
+			value = math.clamp(v, min, max)
+			label.Text = (opt.text or "Slider") .. ": " .. tostring(math.floor(value))
+			fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+			if opt.callback then pcall(opt.callback, value) end
+		end
 
-        function Elements:AddTextBox(info)
-            local Box = Instance.new("TextBox")
-            Box.Size = UDim2.new(1, -10, 0, 30)
-            Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            Box.Text = info.placeholder or ""
-            Box.PlaceholderText = info.text or "Enter text..."
-            Box.Font = Enum.Font.Gotham
-            Box.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Box.ClearTextOnFocus = false
-            Box.Parent = Page
-            Instance.new("UICorner", Box)
+		local dragging = false
+		bar.InputBegan:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+		end)
+		UIS.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+		end)
+		UIS.InputChanged:Connect(function(i)
+			if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+				local pos = (i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X
+				frame:Set(min + (max - min) * math.clamp(pos, 0, 1))
+			end
+		end)
 
-            Box.FocusLost:Connect(function()
-                if info.callback then info.callback(Box.Text) end
-            end)
-            return Box
-        end
+		frame:Set(value)
+		return frame
+	end
 
-        function Elements:AddSlider(info)
-            local SliderFrame = Instance.new("Frame")
-            SliderFrame.Size = UDim2.new(1, -10, 0, 40)
-            SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            SliderFrame.Parent = Page
-            Instance.new("UICorner", SliderFrame)
+	-- TextBox
+	function folder:AddBox(opt)
+		local box = Instance.new("TextBox")
+		box.Text = opt.placeholder or "Enter text..."
+		box.Size = UDim2.new(1, -10, 0, 30)
+		box.Position = UDim2.new(0, 5, 0, 0)
+		box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		box.TextColor3 = Color3.fromRGB(255, 255, 255)
+		box.Font = Enum.Font.Gotham
+		box.TextSize = 14
+		box.Parent = Content
+		Instance.new("UICorner", box)
 
-            local Label = Instance.new("TextLabel")
-            Label.Text = (info.text or "Slider") .. ": " .. tostring(info.default or info.min or 0)
-            Label.Font = Enum.Font.Gotham
-            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Label.BackgroundTransparency = 1
-            Label.Size = UDim2.new(1, 0, 0, 20)
-            Label.Parent = SliderFrame
+		function box:Set(v)
+			box.Text = tostring(v)
+			if opt.callback then pcall(opt.callback, box.Text) end
+		end
 
-            local Bar = Instance.new("Frame")
-            Bar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            Bar.Size = UDim2.new(1, -10, 0, 5)
-            Bar.Position = UDim2.new(0, 5, 0, 25)
-            Bar.Parent = SliderFrame
-            Instance.new("UICorner", Bar)
+		box.FocusLost:Connect(function()
+			if opt.callback then pcall(opt.callback, box.Text) end
+		end)
 
-            local Fill = Instance.new("Frame")
-            Fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-            Fill.Size = UDim2.new(0, 0, 1, 0)
-            Fill.Parent = Bar
-            Instance.new("UICorner", Fill)
+		return box
+	end
 
-            local min, max = info.min or 0, info.max or 100
-            local val = info.default or min
-
-            function SliderFrame:Set(v)
-                val = math.clamp(v, min, max)
-                local percent = (val - min) / (max - min)
-                Fill.Size = UDim2.new(percent, 0, 1, 0)
-                Label.Text = (info.text or "Slider") .. ": " .. math.floor(val)
-                if info.callback then info.callback(val) end
-            end
-
-            Bar.InputBegan:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local conn
-                    conn = UserInputService.InputChanged:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement then
-                            local rel = (input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X
-                            SliderFrame:Set(min + (max - min) * math.clamp(rel, 0, 1))
-                        end
-                    end)
-                    UserInputService.InputEnded:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                            conn:Disconnect()
-                        end
-                    end)
-                end
-            end)
-
-            SliderFrame:Set(val)
-            return SliderFrame
-        end
-
-        return Elements
-    end
-
-    return Tabs
+	return folder
 end
 
-return Library
+return ModernMiniUI
