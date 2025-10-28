@@ -1,110 +1,144 @@
--- Mini Tora Style UI (with Set & Refresh)
+--// Small Tora-Style UI Library
 local Library = {}
 
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+
+--== Core Function ==--
 function Library:CreateWindow(title)
-    local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-    local main = Instance.new("Frame", gui)
-    main.Size = UDim2.new(0, 260, 0, 220)
-    main.Position = UDim2.new(0.5, -130, 0.5, -110)
-    main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    main.BorderSizePixel = 0
-    main.Active, main.Draggable = true, true
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "MiniToraUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Parent = game:GetService("CoreGui")
 
-    local titleBar = Instance.new("TextLabel", main)
-    titleBar.Size = UDim2.new(1, 0, 0, 28)
-    titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    titleBar.Text = title or "Mini UI"
-    titleBar.Font = Enum.Font.GothamBold
-    titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleBar.TextSize = 16
+    local MainFrame = Instance.new("Frame")
+    MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    MainFrame.Size = UDim2.new(0, 220, 0, 30)
+    MainFrame.Position = UDim2.new(0.5, -110, 0.4, 0)
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.Parent = ScreenGui
 
-    local list = Instance.new("Frame", main)
-    list.Size = UDim2.new(1, 0, 1, -28)
-    list.Position = UDim2.new(0, 0, 0, 28)
-    list.BackgroundTransparency = 1
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0,5)
+    UICorner.Parent = MainFrame
 
-    local layout = Instance.new("UIListLayout", list)
-    layout.Padding = UDim.new(0, 4)
+    local Title = Instance.new("TextLabel")
+    Title.Text = title or "Mini UI"
+    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 14
+    Title.Size = UDim2.new(1,0,1,0)
+    Title.BackgroundTransparency = 1
+    Title.Parent = MainFrame
 
-    local Folder = {}
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    ContentFrame.Position = UDim2.new(0,0,1,0)
+    ContentFrame.Size = UDim2.new(1,0,0,0)
+    ContentFrame.ClipsDescendants = true
+    ContentFrame.Parent = MainFrame
 
-    -- Button
-    function Folder:AddButton(text, callback)
-        local b = Instance.new("TextButton", list)
-        b.Size = UDim2.new(1, -10, 0, 28)
-        b.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        b.Text = text
-        b.Font = Enum.Font.Gotham
-        b.TextSize = 14
-        b.TextColor3 = Color3.new(1, 1, 1)
-        b.MouseButton1Click:Connect(function()
-            if callback then callback() end
-        end)
-    end
+    local Layout = Instance.new("UIListLayout")
+    Layout.Padding = UDim.new(0,5)
+    Layout.Parent = ContentFrame
 
-    -- Toggle
-    function Folder:AddToggle(text, callback)
-        local t = Instance.new("TextButton", list)
-        t.Size = UDim2.new(1, -10, 0, 28)
-        t.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        t.Text = text .. ": OFF"
-        t.Font = Enum.Font.Gotham
-        t.TextSize = 14
-        t.TextColor3 = Color3.new(1, 1, 1)
-        local state = false
-        t.MouseButton1Click:Connect(function()
-            state = not state
-            t.Text = text .. ": " .. (state and "ON" or "OFF")
-            if callback then callback(state) end
-        end)
-    end
-
-    -- Dropdown (with Set & Refresh)
-    function Folder:AddDropdown(text, options, callback)
-        local f = Instance.new("Frame", list)
-        f.Size = UDim2.new(1, -10, 0, 50)
-        f.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-
-        local l = Instance.new("TextLabel", f)
-        l.Size = UDim2.new(1, 0, 0, 22)
-        l.BackgroundTransparency = 1
-        l.Text = text
-        l.Font = Enum.Font.Gotham
-        l.TextSize = 14
-        l.TextColor3 = Color3.new(1, 1, 1)
-
-        local btn = Instance.new("TextButton", f)
-        btn.Size = UDim2.new(1, -8, 0, 22)
-        btn.Position = UDim2.new(0, 4, 0, 24)
-        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        btn.Text = "Select..."
-        btn.Font = Enum.Font.Gotham
-        btn.TextSize = 13
-        btn.TextColor3 = Color3.new(1, 1, 1)
-
-        local current = options or {}
-
-        local function Set(new)
-            current = new
-            print("Dropdown Set ->", table.concat(current, ", "))
+    local open = false
+    Title.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            open = not open
+            TweenService:Create(ContentFrame, TweenInfo.new(0.3), {
+                Size = open and UDim2.new(1,0,0, Layout.AbsoluteContentSize.Y + 10) or UDim2.new(1,0,0,0)
+            }):Play()
         end
+    end)
 
-        local function Refresh()
-            print("Dropdown Refreshed")
-        end
+    local folder = {}
+    function folder:AddButton(options)
+        local Button = Instance.new("TextButton")
+        Button.Text = options.text or "Button"
+        Button.Font = Enum.Font.Gotham
+        Button.TextColor3 = Color3.fromRGB(255,255,255)
+        Button.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        Button.Size = UDim2.new(1,0,0,25)
+        Button.Parent = ContentFrame
 
-        btn.MouseButton1Click:Connect(function()
-            if callback and #current > 0 then
-                local pick = current[math.random(1, #current)]
-                btn.Text = pick
-                callback(pick)
+        local UIC = Instance.new("UICorner")
+        UIC.CornerRadius = UDim.new(0,4)
+        UIC.Parent = Button
+
+        Button.MouseButton1Click:Connect(function()
+            if options.callback then
+                pcall(options.callback)
             end
         end)
-
-        return { Set = Set, Refresh = Refresh }
+        return Button
     end
 
-    return Folder
+    function folder:AddToggle(options)
+        local Toggle = Instance.new("TextButton")
+        Toggle.Text = (options.text or "Toggle") .. ": OFF"
+        Toggle.Font = Enum.Font.Gotham
+        Toggle.TextColor3 = Color3.fromRGB(255,255,255)
+        Toggle.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        Toggle.Size = UDim2.new(1,0,0,25)
+        Toggle.Parent = ContentFrame
+
+        local state = false
+        function Toggle:Set(value)
+            state = value
+            Toggle.Text = (options.text or "Toggle") .. ": " .. (state and "ON" or "OFF")
+            if options.callback then
+                pcall(options.callback, state)
+            end
+        end
+
+        Toggle.MouseButton1Click:Connect(function()
+            Toggle:Set(not state)
+        end)
+
+        return Toggle
+    end
+
+    function folder:AddDropdown(options)
+        local Drop = Instance.new("TextButton")
+        Drop.Text = options.text or "Dropdown"
+        Drop.Font = Enum.Font.Gotham
+        Drop.TextColor3 = Color3.fromRGB(255,255,255)
+        Drop.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        Drop.Size = UDim2.new(1,0,0,25)
+        Drop.Parent = ContentFrame
+
+        local list = options.values or {}
+        local current = list[1] or "None"
+
+        function Drop:Set(value)
+            current = value
+            Drop.Text = options.text .. ": " .. tostring(value)
+            if options.callback then
+                pcall(options.callback, value)
+            end
+        end
+
+        function Drop:Refresh(newList)
+            list = newList
+            if not table.find(list, current) then
+                Drop:Set(list[1] or "None")
+            end
+        end
+
+        Drop.MouseButton1Click:Connect(function()
+            local nextIndex = table.find(list, current) or 0
+            nextIndex = nextIndex + 1
+            if nextIndex > #list then nextIndex = 1 end
+            Drop:Set(list[nextIndex])
+        end)
+
+        return Drop
+    end
+
+    return folder
 end
 
 return Library
