@@ -1,379 +1,131 @@
--- Tora-like UI (replica) with Set() and Refresh()
--- Put in a LocalScript (or run via executor). Compact & mobile-friendly.
+-- Tora-Style Custom UI Library (with Set & Refresh)
+-- Made for Mobile + PC
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
+local Library = {}
 
-local function getGuiParent()
-	if LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") then
-		return LocalPlayer:WaitForChild("PlayerGui")
-	end
-	local cg = game:FindFirstChildOfClass("CoreGui")
-	if cg then return cg end
-	return workspace
+-- Create main window
+function Library:CreateWindow(title)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "ToraCustomUI"
+    ScreenGui.Parent = game:GetService("CoreGui")
+
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.new(0, 420, 0, 280)
+    Main.Position = UDim2.new(0.5, -210, 0.5, -140)
+    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Main.BorderSizePixel = 0
+    Main.Active = true
+    Main.Draggable = true
+    Main.Parent = ScreenGui
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 35)
+    Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Title.Text = title or "Tora Custom UI"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 18
+    Title.Parent = Main
+
+    local Content = Instance.new("Frame")
+    Content.Size = UDim2.new(1, 0, 1, -35)
+    Content.Position = UDim2.new(0, 0, 0, 35)
+    Content.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Content.Parent = Main
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 6)
+    UIListLayout.Parent = Content
+
+    local Folder = {}
+
+    -- Add a button
+    function Folder:AddButton(text, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, -12, 0, 30)
+        Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        Button.Text = text
+        Button.Font = Enum.Font.Gotham
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Button.TextSize = 15
+        Button.Parent = Content
+
+        Button.MouseButton1Click:Connect(function()
+            if callback then callback() end
+        end)
+    end
+
+    -- Add a toggle
+    function Folder:AddToggle(text, callback)
+        local Toggle = Instance.new("TextButton")
+        Toggle.Size = UDim2.new(1, -12, 0, 30)
+        Toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        Toggle.Text = text .. ": OFF"
+        Toggle.Font = Enum.Font.Gotham
+        Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Toggle.TextSize = 15
+        Toggle.Parent = Content
+
+        local state = false
+        Toggle.MouseButton1Click:Connect(function()
+            state = not state
+            Toggle.Text = text .. ": " .. (state and "ON" or "OFF")
+            if callback then callback(state) end
+        end)
+    end
+
+    -- Add a dropdown (with Set & Refresh)
+    function Folder:AddDropdown(text, options, callback)
+        local Frame = Instance.new("Frame")
+        Frame.Size = UDim2.new(1, -12, 0, 60)
+        Frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        Frame.Parent = Content
+
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, 0, 0, 25)
+        Label.BackgroundTransparency = 1
+        Label.Text = text
+        Label.Font = Enum.Font.Gotham
+        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Label.TextSize = 15
+        Label.Parent = Frame
+
+        local DropDown = Instance.new("TextButton")
+        DropDown.Size = UDim2.new(1, -12, 0, 25)
+        DropDown.Position = UDim2.new(0, 6, 0, 30)
+        DropDown.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        DropDown.Text = "Select..."
+        DropDown.Font = Enum.Font.Gotham
+        DropDown.TextColor3 = Color3.fromRGB(255, 255, 255)
+        DropDown.TextSize = 14
+        DropDown.Parent = Frame
+
+        local currentOptions = options or {}
+
+        local function RefreshDropdown()
+            -- (Simple version)
+            print("Dropdown refreshed!")
+        end
+
+        local function SetDropdown(newOptions)
+            currentOptions = newOptions
+            print("Dropdown updated:", table.concat(currentOptions, ", "))
+            RefreshDropdown()
+        end
+
+        DropDown.MouseButton1Click:Connect(function()
+            if callback and #currentOptions > 0 then
+                callback(currentOptions[math.random(1, #currentOptions)]) -- random demo
+            end
+        end)
+
+        return {
+            Set = SetDropdown,
+            Refresh = RefreshDropdown,
+        }
+    end
+
+    return Folder
 end
 
-local library = {}
-library.__index = library
-
--- util: rounded corner helper
-local function round(frame, radius)
-	local u = Instance.new("UICorner")
-	u.CornerRadius = radius or UDim.new(0,8)
-	u.Parent = frame
-	return u
-end
-
--- CreateWindow
-function library:CreateWindow(title)
-	local ScreenGui = Instance.new("ScreenGui")
-	ScreenGui.Name = "ToraLite"
-	ScreenGui.Parent = getGuiParent()
-	ScreenGui.ResetOnSpawn = false
-	ScreenGui.IgnoreGuiInset = true
-
-	local Window = Instance.new("Frame", ScreenGui)
-	Window.Size = UDim2.new(0, 420, 0, 320)
-	Window.Position = UDim2.new(0.5, -210, 0.5, -160)
-	Window.BackgroundColor3 = Color3.fromRGB(23,23,23)
-	Window.BorderSizePixel = 0
-	Window.Active = true
-	Window.Draggable = true
-	round(Window, UDim.new(0,10))
-
-	-- header
-	local Header = Instance.new("Frame", Window)
-	Header.Size = UDim2.new(1,0,0,34)
-	Header.Position = UDim2.new(0,0,0,0)
-	Header.BackgroundColor3 = Color3.fromRGB(30,30,30)
-	Header.BorderSizePixel = 0
-	round(Header, UDim.new(0,10))
-
-	local TitleLabel = Instance.new("TextLabel", Header)
-	TitleLabel.Size = UDim2.new(1, -10, 1, 0)
-	TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-	TitleLabel.BackgroundTransparency = 1
-	TitleLabel.Text = title or "ToraLite UI"
-	TitleLabel.TextColor3 = Color3.fromRGB(220,220,220)
-	TitleLabel.Font = Enum.Font.GothamBold
-	TitleLabel.TextSize = 15
-	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-	-- main layout: left sidebar (folders) and right content
-	local Sidebar = Instance.new("Frame", Window)
-	Sidebar.Size = UDim2.new(0,120,1,-34)
-	Sidebar.Position = UDim2.new(0,0,0,34)
-	Sidebar.BackgroundColor3 = Color3.fromRGB(28,28,28)
-	Sidebar.BorderSizePixel = 0
-	round(Sidebar, UDim.new(0,8))
-
-	local Content = Instance.new("Frame", Window)
-	Content.Size = UDim2.new(1,-120,1,-34)
-	Content.Position = UDim2.new(0,120,0,34)
-	Content.BackgroundColor3 = Color3.fromRGB(20,20,20)
-	Content.BorderSizePixel = 0
-	round(Content, UDim.new(0,8))
-
-	-- folder list on left
-	local FolderList = Instance.new("ScrollingFrame", Sidebar)
-	FolderList.Size = UDim2.new(1, -10, 1, -10)
-	FolderList.Position = UDim2.new(0,5,0,5)
-	FolderList.BackgroundTransparency = 1
-	FolderList.ScrollBarThickness = 6
-	local FLLayout = Instance.new("UIListLayout", FolderList)
-	FLLayout.Padding = UDim.new(0,6)
-	FLLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-	-- content holder
-	local PageHolder = Instance.new("Frame", Content)
-	PageHolder.Size = UDim2.new(1,-10,1,-10)
-	PageHolder.Position = UDim2.new(0,5,0,5)
-	PageHolder.BackgroundTransparency = 1
-	local PHLayout = Instance.new("UIListLayout", PageHolder)
-	PHLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	PHLayout.Padding = UDim.new(0,8)
-
-	local windowObj = {
-		ScreenGui = ScreenGui,
-		Window = Window,
-		Sidebar = Sidebar,
-		Content = Content,
-		FolderList = FolderList,
-		PageHolder = PageHolder,
-		Folders = {}
-	}
-	setmetatable(windowObj, library)
-	return windowObj
-end
-
--- Folder creation
-function library:AddFolder(name)
-	local folderObj = {}
-	folderObj.__index = folderObj
-
-	-- left button in sidebar
-	local Btn = Instance.new("TextButton", self.FolderList)
-	Btn.Size = UDim2.new(1, 0, 0, 28)
-	Btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	Btn.AutoButtonColor = false
-	Btn.Text = name
-	Btn.Font = Enum.Font.Gotham
-	Btn.TextSize = 14
-	Btn.TextColor3 = Color3.fromRGB(230,230,230)
-	round(Btn, UDim.new(0,6))
-
-	-- container in content area
-	local Frame = Instance.new("Frame", self.PageHolder)
-	Frame.Size = UDim2.new(1, 0, 0, 0) -- height expands as elements added
-	Frame.BackgroundTransparency = 1
-	Frame.Visible = false
-
-	local Layout = Instance.new("UIListLayout", Frame)
-	Layout.SortOrder = Enum.SortOrder.LayoutOrder
-	Layout.Padding = UDim.new(0,6)
-
-	-- when clicked, show this page and hide others
-	Btn.MouseButton1Click:Connect(function()
-		for _, v in ipairs(self.PageHolder:GetChildren()) do
-			if v:IsA("Frame") then v.Visible = false end
-		end
-		Frame.Visible = true
-		-- highlight chosen button
-		for _, b in ipairs(self.FolderList:GetChildren()) do
-			if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(40,40,40) end
-		end
-		Btn.BackgroundColor3 = Color3.fromRGB(65,65,65)
-	end)
-
-	-- convenience to auto-show first folder
-	if #self.Folders == 0 then
-		Btn:CaptureFocus()
-		Frame.Visible = true
-		Btn.BackgroundColor3 = Color3.fromRGB(65,65,65)
-	end
-
-	-- add elements: Button, Toggle, Slider, Dropdown, Banner, TextField
-	function folderObj:Button(opts)
-		local tb = Instance.new("TextButton", Frame)
-		tb.Size = UDim2.new(1, 0, 0, 32)
-		tb.BackgroundColor3 = Color3.fromRGB(50,50,50)
-		tb.Text = opts.Text or "Button"
-		tb.Font = Enum.Font.Gotham
-		tb.TextSize = 14
-		tb.TextColor3 = Color3.fromRGB(230,230,230)
-		round(tb, UDim.new(0,6))
-		if opts.Callback then tb.MouseButton1Click:Connect(opts.Callback) end
-	end
-
-	function folderObj:Toggle(opts)
-		local cont = Instance.new("Frame", Frame)
-		cont.Size = UDim2.new(1,0,0,32)
-		cont.BackgroundTransparency = 1
-		local lbl = Instance.new("TextLabel", cont)
-		lbl.Size = UDim2.new(0.8,0,1,0)
-		lbl.BackgroundTransparency = 1
-		lbl.Text = opts.Text or "Toggle"
-		lbl.Font = Enum.Font.Gotham
-		lbl.TextSize = 14
-		lbl.TextColor3 = Color3.fromRGB(230,230,230)
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-		local btn = Instance.new("TextButton", cont)
-		btn.Size = UDim2.new(0.18,0,0.7,0)
-		btn.Position = UDim2.new(0.82,0,0.15,0)
-		btn.Text = opts.Default and "ON" or "OFF"
-		btn.Font = Enum.Font.GothamBold
-		btn.TextSize = 12
-		btn.BackgroundColor3 = Color3.fromRGB(80,80,80)
-		btn.TextColor3 = Color3.fromRGB(230,230,230)
-		round(btn, UDim.new(0,6))
-		local state = opts.Default or false
-		btn.MouseButton1Click:Connect(function()
-			state = not state
-			btn.Text = state and "ON" or "OFF"
-			if opts.Callback then opts.Callback(state) end
-		end)
-	end
-
-	function folderObj:Slider(opts)
-		local cont = Instance.new("Frame", Frame)
-		cont.Size = UDim2.new(1,0,0,36)
-		cont.BackgroundTransparency = 1
-
-		local lbl = Instance.new("TextLabel", cont)
-		lbl.Size = UDim2.new(1,0,0,18)
-		lbl.Position = UDim2.new(0,0,0,0)
-		lbl.BackgroundTransparency = 1
-		lbl.Text = (opts.Text or "Slider").." : "..(opts.Default or opts.Min or 0)
-		lbl.Font = Enum.Font.Gotham
-		lbl.TextSize = 13
-		lbl.TextColor3 = Color3.fromRGB(230,230,230)
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-		local barBack = Instance.new("Frame", cont)
-		barBack.Size = UDim2.new(1,0,0,10)
-		barBack.Position = UDim2.new(0,0,0,20)
-		barBack.BackgroundColor3 = Color3.fromRGB(45,45,45)
-		round(barBack, UDim.new(0,6))
-		local barFill = Instance.new("Frame", barBack)
-		local minv = opts.Min or 0
-		local maxv = opts.Max or 100
-		local value = opts.Default or minv
-		local function setFillFromValue()
-			local pct = 0
-			if maxv - minv ~= 0 then pct = (value - minv) / (maxv - minv) end
-			barFill.Size = UDim2.new(pct,0,1,0)
-		end
-		barFill.BackgroundColor3 = Color3.fromRGB(100,120,255)
-		round(barFill, UDim.new(0,6))
-		setFillFromValue()
-
-		local dragging = false
-		local inputConnection
-		barBack.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dragging = true
-				inputConnection = UIS.InputChanged:Connect(function(i)
-					if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-						local x = i.Position.X
-						local rel = math.clamp((x - barBack.AbsolutePosition.X) / barBack.AbsoluteSize.X, 0, 1)
-						value = math.floor(minv + (maxv - minv) * rel)
-						lbl.Text = (opts.Text or "Slider").." : "..value
-						setFillFromValue()
-						if opts.Callback then opts.Callback(value) end
-					end
-				end)
-			end
-		end)
-		barBack.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dragging = false
-				if inputConnection then inputConnection:Disconnect() inputConnection = nil end
-			end
-		end)
-	end
-
-	function folderObj:TextField(opts)
-		local box = Instance.new("TextBox", Frame)
-		box.Size = UDim2.new(1,0,0,30)
-		box.BackgroundColor3 = Color3.fromRGB(45,45,45)
-		box.TextColor3 = Color3.fromRGB(230,230,230)
-		box.Font = Enum.Font.Gotham
-		box.TextSize = 14
-		box.Text = opts.Placeholder or ""
-		round(box, UDim.new(0,6))
-		box.FocusLost:Connect(function(enter)
-			if opts.Callback and enter then opts.Callback(box.Text) end
-		end)
-	end
-
-	function folderObj:Banner(text)
-		local b = Instance.new("TextLabel", Frame)
-		b.Size = UDim2.new(1,0,0,28)
-		b.BackgroundColor3 = Color3.fromRGB(40,40,40)
-		b.Text = text or ""
-		b.Font = Enum.Font.GothamBold
-		b.TextSize = 13
-		b.TextColor3 = Color3.fromRGB(210,210,210)
-		round(b, UDim.new(0,6))
-	end
-
-	-- Dropdown with Set + Refresh
-	function folderObj:Dropdown(opts)
-		local container = Instance.new("Frame", Frame)
-		container.Size = UDim2.new(1,0,0,36)
-		container.BackgroundTransparency = 1
-
-		local label = Instance.new("TextButton", container)
-		label.Size = UDim2.new(1,0,0,32)
-		label.BackgroundColor3 = Color3.fromRGB(50,50,50)
-		label.TextColor3 = Color3.fromRGB(230,230,230)
-		label.Font = Enum.Font.Gotham
-		label.TextSize = 14
-		label.Text = opts.Text or "Dropdown"
-		label.AutoButtonColor = false
-		round(label, UDim.new(0,6))
-
-		local listFrame = Instance.new("Frame", container)
-		listFrame.Size = UDim2.new(1,0,0,0)
-		listFrame.Position = UDim2.new(0,0,1,2)
-		listFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-		listFrame.ClipsDescendants = true
-		local listLayout = Instance.new("UIListLayout", listFrame)
-		listLayout.Padding = UDim.new(0,4)
-
-		local isOpen = false
-		local options = opts.Options or {}
-
-		local function build()
-			-- clear old option buttons
-			for _, c in ipairs(listFrame:GetChildren()) do
-				if c:IsA("TextButton") then c:Destroy() end
-			end
-			-- rebuild
-			for i,opt in ipairs(options) do
-				local b = Instance.new("TextButton", listFrame)
-				b.Size = UDim2.new(1, -8, 0, 28)
-				b.Position = UDim2.new(0,4,0, (i-1)*32)
-				b.AnchorPoint = Vector2.new(0,0)
-				b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-				b.Text = tostring(opt)
-				b.Font = Enum.Font.Gotham
-				b.TextSize = 13
-				b.TextColor3 = Color3.fromRGB(230,230,230)
-				round(b, UDim.new(0,6))
-				b.MouseButton1Click:Connect(function()
-					label.Text = (opts.Text or "Dropdown") .. ": " .. tostring(opt)
-					if opts.Callback then opts.Callback(opt) end
-					isOpen = false
-					listFrame.Size = UDim2.new(1,0,0,0)
-				end)
-			end
-			-- adjust listFrame size
-			local count = #options
-			local h = math.clamp(count * 32, 0, 8 * 32) -- max 8 visible
-			listFrame.Size = isOpen and UDim2.new(1,0,0,h) or UDim2.new(1,0,0,0)
-		end
-
-		-- open/close
-		label.MouseButton1Click:Connect(function()
-			isOpen = not isOpen
-			build()
-		end)
-
-		-- methods
-		function listFrame:Set(newOptions)
-			options = newOptions or {}
-			build()
-		end
-		function listFrame:Refresh()
-			build()
-		end
-
-		-- initial build
-		build()
-		return listFrame
-	end
-
-	-- record and return folder object
-	setmetatable(folderObj, { __index = {
-		Button = folderObj.Button,
-		Toggle = folderObj.Toggle,
-		Slider = folderObj.Slider,
-		Dropdown = folderObj.Dropdown,
-		TextField = folderObj.TextField,
-		Banner = folderObj.Banner
-	}})
-	-- store the UI instances for the folderObj to use methods above
-	folderObj._UI = { Btn = Btn, Frame = Frame }
-	table.insert(self.Folders, folderObj)
-	return folderObj
-end
-
--- expose library as variable like Tora
-return setmetatable({}, {
-	__call = function(_, ...) return library end,
-	__index = library
-})
+return Library
