@@ -1,290 +1,174 @@
--- SmallDraggableUI Library
 local Library = {}
-Library.__index = Library
 
 function Library:CreateUI(title)
-	local ScreenGui = Instance.new("ScreenGui")
-	ScreenGui.Name = "SmallDraggableUI"
-	ScreenGui.ResetOnSpawn = false
-	ScreenGui.IgnoreGuiInset = true -- ✅ FIX for line 25 issue (ensures GUI aligns properly)
-	ScreenGui.Parent = game:GetService("CoreGui")
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "ModernUILib"
+    ScreenGui.ResetOnSpawn = false
 
-	-- Main Frame
-	local Frame = Instance.new("Frame")
-	Frame.Size = UDim2.new(0, 180, 0, 90)
-	Frame.Position = UDim2.new(0.5, -90, 0.5, -45)
-	Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-	Frame.BorderSizePixel = 0
-	Frame.Active = true
-	Frame.Draggable = true
-	Frame.Parent = ScreenGui
+    -- ✅ FIX 1: safer parenting (works in LocalScript + exploit env)
+    local success, playerGui = pcall(function()
+        return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    end)
+    if success and playerGui then
+        ScreenGui.Parent = playerGui
+    else
+        ScreenGui.Parent = game:GetService("CoreGui")
+    end
 
-	-- Round corners
-	local UICorner = Instance.new("UICorner")
-	UICorner.CornerRadius = UDim.new(0, 10)
-	UICorner.Parent = Frame
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 250, 0, 300)
+    Frame.Position = UDim2.new(0.5, -125, 0.5, -150)
+    Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Frame.BorderSizePixel = 0
+    Frame.Active = true
+    Frame.Draggable = true
+    Frame.Parent = ScreenGui
 
-	-- Title bar
-	local Title = Instance.new("TextLabel")
-	Title.Text = title or "My Small UI"
-	Title.Size = UDim2.new(1, 0, 0, 25)
-	Title.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title.Font = Enum.Font.GothamBold
-	Title.TextSize = 16
-	Title.Parent = Frame
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.BackgroundTransparency = 1
+    Title.Text = title or "Modern UI"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 20
+    Title.Parent = Frame
 
-	local UICorner2 = Instance.new("UICorner")
-	UICorner2.CornerRadius = UDim.new(0, 10)
-	UICorner2.Parent = Title
+    local Container = Instance.new("Frame")
+    Container.Position = UDim2.new(0, 0, 0, 40)
+    Container.Size = UDim2.new(1, 0, 1, -40)
+    Container.BackgroundTransparency = 1
+    Container.Parent = Frame
 
-	-- Drag support
-	local UserInputService = game:GetService("UserInputService")
-	local dragging = false
-	local dragStart, startPos
+    -- Elements
+    function Library:AddButton(text, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, -10, 0, 30)
+        Button.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
+        Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Button.Text = text
+        Button.Font = Enum.Font.Gotham
+        Button.TextSize = 16
+        Button.Parent = Container
+        Button.MouseButton1Click:Connect(function()
+            if callback then pcall(callback) end
+        end)
+    end
 
-	Title.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = input.Position
-			startPos = Frame.Position
-		end
-	end)
+    function Library:AddToggle(text, default, callback)
+        local Toggle = Instance.new("TextButton")
+        Toggle.Size = UDim2.new(1, -10, 0, 30)
+        Toggle.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
+        Toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Toggle.Text = text .. ": " .. tostring(default)
+        Toggle.Font = Enum.Font.Gotham
+        Toggle.TextSize = 16
+        Toggle.Parent = Container
+        local toggled = default
+        Toggle.MouseButton1Click:Connect(function()
+            toggled = not toggled
+            Toggle.Text = text .. ": " .. tostring(toggled)
+            if callback then pcall(callback, toggled) end
+        end)
+    end
 
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
-			Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end
-	end)
+    function Library:AddLabel(text)
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, -10, 0, 30)
+        Label.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
+        Label.BackgroundTransparency = 1
+        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Label.Text = text
+        Label.Font = Enum.Font.Gotham
+        Label.TextSize = 16
+        Label.Parent = Container
+    end
 
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-		end
-	end)
+    function Library:AddSlider(text, min, max, default, callback)
+        local Holder = Instance.new("Frame")
+        Holder.Size = UDim2.new(1, -10, 0, 40)
+        Holder.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 45)
+        Holder.BackgroundTransparency = 1
+        Holder.Parent = Container
 
-	-- Return the window object
-	local window = {}
-	setmetatable(window, Library)
-	window.Frame = Frame
-	return window
-end
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, 0, 0, 20)
+        Label.BackgroundTransparency = 1
+        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Label.Text = text
+        Label.Font = Enum.Font.Gotham
+        Label.TextSize = 14
+        Label.Parent = Holder
 
--- UI Elements (each parented to self.Frame)
+        local Bar = Instance.new("Frame")
+        Bar.Position = UDim2.new(0, 0, 0, 20)
+        Bar.Size = UDim2.new(1, 0, 0, 10)
+        Bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Bar.Parent = Holder
 
-function Library:AddLabel(text)
-	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(1, -20, 0, 25)
-	Label.Position = UDim2.new(0, 10, 0, 35)
-	Label.BackgroundTransparency = 1
-	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Label.Font = Enum.Font.Gotham
-	Label.TextSize = 14
-	Label.Text = text
-	Label.Parent = self.Frame
-	return Label
-end
+        local Fill = Instance.new("Frame")
+        -- ✅ FIX 2: safe math handling
+        local ratio = 0
+        if type(min) == "number" and type(max) == "number" and max > min then
+            ratio = ((default or min) - min) / (max - min)
+        end
+        Fill.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
+        Fill.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
+        Fill.Parent = Bar
 
-function Library:AddButton(text, callback)
-	local Button = Instance.new("TextButton")
-	Button.Size = UDim2.new(1, -20, 0, 30)
-	Button.Position = UDim2.new(0, 10, 0, 65)
-	Button.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
-	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Button.Font = Enum.Font.Gotham
-	Button.TextSize = 14
-	Button.Text = text
-	Button.Parent = self.Frame
-	Button.MouseButton1Click:Connect(function()
-		if callback then callback() end
-	end)
-	return Button
-end
+        local UserInputService = game:GetService("UserInputService")
+        local dragging = false
 
-function Library:AddToggle(text, default, callback)
-	local Toggle = Instance.new("TextButton")
-	Toggle.Size = UDim2.new(1, -20, 0, 30)
-	Toggle.Position = UDim2.new(0, 10, 0, 105)
-	Toggle.BackgroundColor3 = default and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
-	Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Toggle.Font = Enum.Font.Gotham
-	Toggle.TextSize = 14
-	Toggle.Text = text
-	Toggle.Parent = self.Frame
+        local function update(input)
+            if Bar.AbsoluteSize.X == 0 then return end
+            local pos = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+            Fill.Size = UDim2.new(pos, 0, 1, 0)
+            local val = math.floor(min + (max - min) * pos)
+            if callback then pcall(callback, val) end
+        end
 
-	local state = default
-	Toggle.MouseButton1Click:Connect(function()
-		state = not state
-		Toggle.BackgroundColor3 = state and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
-		if callback then callback(state) end
-	end)
-	return Toggle
-end
+        Bar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                update(input)
+            end
+        end)
 
-function Library:AddBox(text, placeholder, callback)
-	local Box = Instance.new("TextBox")
-	Box.Size = UDim2.new(1, -20, 0, 30)
-	Box.Position = UDim2.new(0, 10, 0, 145)
-	Box.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-	Box.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Box.PlaceholderText = placeholder or ""
-	Box.Font = Enum.Font.Gotham
-	Box.TextSize = 14
-	Box.Text = ""
-	Box.Parent = self.Frame
-	Box.FocusLost:Connect(function(enter)
-		if enter and callback then callback(Box.Text) end
-	end)
-	return Box
-end
+        Bar.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
 
-function Library:AddSlider(text, min, max, default, callback)
-	local SliderFrame = Instance.new("Frame")
-	SliderFrame.Size = UDim2.new(1, -20, 0, 40)
-	SliderFrame.Position = UDim2.new(0, 10, 0, 185)
-	SliderFrame.BackgroundTransparency = 1
-	SliderFrame.Parent = self.Frame
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                update(input)
+            end
+        end)
+    end
 
-	local Title = Instance.new("TextLabel")
-	Title.Size = UDim2.new(1, 0, 0, 20)
-	Title.Text = text
-	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title.Font = Enum.Font.Gotham
-	Title.TextSize = 14
-	Title.BackgroundTransparency = 1
-	Title.Parent = SliderFrame
+    function Library:AddList(options)
+        local Drop = Instance.new("TextButton")
+        Drop.Size = UDim2.new(1, -10, 0, 30)
+        Drop.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
+        Drop.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        Drop.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Drop.Text = options.text or "List"
+        Drop.Font = Enum.Font.Gotham
+        Drop.TextSize = 16
+        Drop.Parent = Container
 
-	local Bar = Instance.new("Frame")
-	Bar.Size = UDim2.new(1, 0, 0, 6)
-	Bar.Position = UDim2.new(0, 0, 0, 25)
-	Bar.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
-	Bar.Parent = SliderFrame
+        Drop.MouseButton1Click:Connect(function()
+            if options.values then
+                for _, val in ipairs(options.values) do
+                    print("Selected:", val)
+                end
+            end
+        end)
+    end
 
-	local Fill = Instance.new("Frame")
-	Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-	Fill.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
-	Fill.Parent = Bar
-
-	local UserInputService = game:GetService("UserInputService")
-	local dragging = false
-
-	local function update(input)
-		local pos = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-		Fill.Size = UDim2.new(pos, 0, 1, 0)
-		local val = math.floor(min + (max - min) * pos)
-		if callback then callback(val) end
-	end
-
-	Bar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			update(input)
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			update(input)
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = false
-		end
-	end)
-
-	return SliderFrame
-end
-
--- ✅ FIXED AddList (line 130 issue)
-function Library:AddList(text, values, callback)
-	local Drop = Instance.new("Frame")
-	Drop.Size = UDim2.new(1, -20, 0, 30)
-	Drop.Position = UDim2.new(0, 10, 0, 230)
-	Drop.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-	Drop.Parent = self.Frame
-
-	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(1, 0, 1, 0)
-	Label.BackgroundTransparency = 1
-	Label.Text = text
-	Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Label.Font = Enum.Font.Gotham
-	Label.TextSize = 14
-	Label.Parent = Drop
-
-	local Button = Instance.new("TextButton")
-	Button.Size = UDim2.new(1, 0, 1, 0)
-	Button.BackgroundTransparency = 1
-	Button.Text = ""
-	Button.Parent = Drop
-
-	local ListFrame = Instance.new("Frame")
-	ListFrame.Size = UDim2.new(1, 0, 0, 0)
-	ListFrame.Position = UDim2.new(0, 0, 1, 5)
-	ListFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-	ListFrame.Visible = false
-	ListFrame.Parent = Drop
-
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = ListFrame
-
-	local currentValues = {}
-	if type(values) == "table" then
-		for i, v in ipairs(values) do
-			table.insert(currentValues, tostring(v))
-		end
-	end
-
-	local open = false
-
-	local function rebuildOptions()
-		ListFrame:ClearAllChildren()
-		layout.Parent = ListFrame
-		for _, v in ipairs(currentValues) do
-			local opt = Instance.new("TextButton")
-			opt.Size = UDim2.new(1, 0, 0, 25)
-			opt.BackgroundTransparency = 1
-			opt.Text = v
-			opt.TextColor3 = Color3.fromRGB(255, 255, 255)
-			opt.Font = Enum.Font.Gotham
-			opt.TextSize = 14
-			opt.Parent = ListFrame
-			opt.MouseButton1Click:Connect(function()
-				Label.Text = text .. ": " .. v
-				ListFrame.Visible = false
-				open = false
-				if callback then callback(v) end
-			end)
-		end
-		ListFrame.Size = UDim2.new(1, 0, 0, #currentValues * 25)
-	end
-
-	rebuildOptions()
-
-	Button.MouseButton1Click:Connect(function()
-		open = not open
-		ListFrame.Visible = open
-	end)
-
-	function Drop:Set(newValues)
-		currentValues = {}
-		if type(newValues) == "table" then
-			for _, v in ipairs(newValues) do
-				table.insert(currentValues, tostring(v))
-			end
-		end
-		rebuildOptions()
-	end
-
-	function Drop:Refresh(newValues)
-		self:Set(newValues or currentValues)
-	end
-
-	return Drop
+    return Library
 end
 
 return Library
