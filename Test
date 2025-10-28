@@ -197,6 +197,7 @@ function Library:AddSlider(text, min, max, default, callback)
 	return SliderFrame
 end
 
+-- ✅ FIXED AddList
 function Library:AddList(text, values, callback)
 	local Drop = Instance.new("Frame")
 	Drop.Size = UDim2.new(1, -20, 0, 30)
@@ -220,53 +221,80 @@ function Library:AddList(text, values, callback)
 	Button.Parent = Drop
 
 	local ListFrame = Instance.new("Frame")
-	ListFrame.Size = UDim2.new(1, 0, 0, #values * 25)
+	ListFrame.Size = UDim2.new(1, 0, 0, 0)
 	ListFrame.Position = UDim2.new(0, 0, 1, 5)
 	ListFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 	ListFrame.Visible = false
 	ListFrame.Parent = Drop
 
-	for _, v in ipairs(values) do
-		local Item = Instance.new("TextButton")
-		Item.Size = UDim2.new(1, 0, 0, 25)
-		Item.BackgroundTransparency = 1
-		Item.Text = v
-		Item.TextColor3 = Color3.fromRGB(255, 255, 255)
-		Item.Font = Enum.Font.Gotham
-		Item.TextSize = 14
-		Item.Parent = ListFrame
-		Item.MouseButton1Click:Connect(function()
-			Label.Text = text .. ": " .. v
-			ListFrame.Visible = false
-			if callback then callback(v) end
-		end)
-	end
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = ListFrame
 
-	Button.MouseButton1Click:Connect(function()
-		ListFrame.Visible = not ListFrame.Visible
-	end)
-
-	function Drop:Set(newValues)
-		ListFrame:ClearAllChildren()
-		for _, v in ipairs(newValues) do
-			local Item = Instance.new("TextButton")
-			Item.Size = UDim2.new(1, 0, 0, 25)
-			Item.BackgroundTransparency = 1
-			Item.Text = v
-			Item.TextColor3 = Color3.fromRGB(255, 255, 255)
-			Item.Font = Enum.Font.Gotham
-			Item.TextSize = 14
-			Item.Parent = ListFrame
-			Item.MouseButton1Click:Connect(function()
-				Label.Text = text .. ": " .. v
-				ListFrame.Visible = false
-				if callback then callback(v) end
-			end)
+	local currentValues = {}
+	if type(values) == "table" then
+		for i, v in ipairs(values) do
+			table.insert(currentValues, tostring(v))
 		end
 	end
 
+	local open = false
+	local optionButtons = {}
+
+	local function rebuildOptions()
+		for _, b in ipairs(optionButtons) do
+			if b and b.Parent then b:Destroy() end
+		end
+		optionButtons = {}
+
+		for i, v in ipairs(currentValues) do
+			local opt = Instance.new("TextButton")
+			opt.Size = UDim2.new(1, 0, 0, 25)
+			opt.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			opt.TextColor3 = Color3.fromRGB(255, 255, 255)
+			opt.Font = Enum.Font.Gotham
+			opt.TextSize = 14
+			opt.Text = v
+			opt.Parent = ListFrame
+
+			opt.MouseButton1Click:Connect(function()
+				Label.Text = text .. ": " .. v
+				ListFrame.Visible = false
+				open = false
+				if type(callback) == "function" then pcall(callback, v) end
+			end)
+
+			table.insert(optionButtons, opt)
+		end
+
+		local totalHeight = #currentValues * 25
+		ListFrame.Size = UDim2.new(1, 0, 0, totalHeight)
+	end
+
+	rebuildOptions()
+
+	Button.MouseButton1Click:Connect(function()
+		open = not open
+		ListFrame.Visible = open
+		if open then
+			ListFrame.Size = UDim2.new(1, 0, 0, #currentValues * 25)
+		else
+			ListFrame.Size = UDim2.new(1, 0, 0, 0)
+		end
+	end)
+
+	function Drop:Set(newValues)
+		currentValues = {}
+		if type(newValues) == "table" then
+			for i, v in ipairs(newValues) do
+				table.insert(currentValues, tostring(v))
+			end
+		end
+		rebuildOptions()
+	end
+
 	function Drop:Refresh(newValues)
-		self:Set(newValues)
+		self:Set(newValues or currentValues)
 	end
 
 	return Drop
