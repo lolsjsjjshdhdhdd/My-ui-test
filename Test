@@ -1,4 +1,4 @@
--- Modern Mobile-Friendly UI Library
+-- Ultra-Modern Roblox UI Library
 local Library = {}
 Library.__index = Library
 
@@ -8,21 +8,21 @@ local TweenService = game:GetService("TweenService")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Tween Utility
-local function tween(object, properties, duration)
-    local info = TweenInfo.new(duration or 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local t = TweenService:Create(object, info, properties)
+-- Utility tween function
+local function tween(obj, props, time)
+    local t = TweenService:Create(obj, TweenInfo.new(time or 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
     t:Play()
     return t
 end
 
--- Create UI
+-- Create the UI
 function Library:CreateUI(name)
     local selfObj = {}
     setmetatable(selfObj, Library)
 
+    -- ScreenGui
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = name or "ModernUI"
+    screenGui.Name = name or "UltraModernUI"
     screenGui.ResetOnSpawn = false
     screenGui.Parent = PlayerGui
 
@@ -30,37 +30,44 @@ function Library:CreateUI(name)
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 300, 0, 400)
     mainFrame.Position = UDim2.new(1, -310, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    mainFrame.BorderSizePixel = 0
     mainFrame.AnchorPoint = Vector2.new(1, 0.5)
-    mainFrame.Parent = screenGui
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    mainFrame.BorderSizePixel = 0
     mainFrame.Visible = false
     mainFrame.ClipsDescendants = true
+    mainFrame.Parent = screenGui
 
-    -- Rounded Corners
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = mainFrame
+    local uicorner = Instance.new("UICorner")
+    uicorner.CornerRadius = UDim.new(0,16)
+    uicorner.Parent = mainFrame
+
+    -- Shadow (soft depth effect)
+    local shadow = Instance.new("UIStroke")
+    shadow.Thickness = 1
+    shadow.Color = Color3.fromRGB(60,60,60)
+    shadow.Parent = mainFrame
 
     -- Toggle Button
     local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 40, 0, 40)
-    toggle.Position = UDim2.new(1, -50, 0, 50)
-    toggle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    toggle.Text = "☰"
-    toggle.TextScaled = true
-    toggle.TextColor3 = Color3.fromRGB(0,0,0)
+    toggle.Size = UDim2.new(0, 50, 0, 50)
+    toggle.Position = UDim2.new(1, -60, 0, 50)
     toggle.AnchorPoint = Vector2.new(0.5,0.5)
+    toggle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    toggle.Text = "☰"
+    toggle.TextColor3 = Color3.fromRGB(0,0,0)
+    toggle.TextScaled = true
+    toggle.Font = Enum.Font.GothamBold
     toggle.Parent = screenGui
 
     local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.CornerRadius = UDim.new(0,12)
     toggleCorner.Parent = toggle
 
     toggle.MouseButton1Click:Connect(function()
         mainFrame.Visible = not mainFrame.Visible
     end)
 
+    -- Storage
     selfObj.ScreenGui = screenGui
     selfObj.MainFrame = mainFrame
     selfObj.Elements = {}
@@ -68,20 +75,33 @@ function Library:CreateUI(name)
     return selfObj
 end
 
--- Add Button
+-- Add a Button
 function Library:AddButton(text, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, #self.Elements*50 + 10)
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.Size = UDim2.new(1, -20, 0, 45)
+    btn.Position = UDim2.new(0, 10, 0, #self.Elements*55 + 10)
+    btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
     btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.TextColor3 = Color3.fromRGB(240,240,240)
+    btn.Font = Enum.Font.GothamSemibold
     btn.TextScaled = true
     btn.Parent = self.MainFrame
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0,12)
     corner.Parent = btn
+
+    local shadow = Instance.new("UIStroke")
+    shadow.Thickness = 1
+    shadow.Color = Color3.fromRGB(60,60,60)
+    shadow.Parent = btn
+
+    btn.MouseEnter:Connect(function()
+        tween(btn,{BackgroundColor3 = Color3.fromRGB(60,60,60)},0.15)
+    end)
+    btn.MouseLeave:Connect(function()
+        tween(btn,{BackgroundColor3 = Color3.fromRGB(40,40,40)},0.15)
+    end)
 
     btn.MouseButton1Click:Connect(function()
         if callback then callback() end
@@ -94,98 +114,39 @@ end
 -- Add Toggle
 function Library:AddToggle(text, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 40)
-    frame.Position = UDim2.new(0, 10, 0, #self.Elements*50 + 10)
+    frame.Size = UDim2.new(1, -20, 0, 45)
+    frame.Position = UDim2.new(0,10,0,#self.Elements*55 +10)
     frame.BackgroundTransparency = 1
     frame.Parent = self.MainFrame
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Size = UDim2.new(0.7,0,1,0)
     label.Position = UDim2.new(0,0,0,0)
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(240,240,240)
     label.TextScaled = true
     label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
     label.Parent = frame
 
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(0, 40, 0, 20)
-    toggleBtn.Position = UDim2.new(0.75,0,0.5,-10)
+    local toggleBtn = Instance.new("Frame")
+    toggleBtn.Size = UDim2.new(0,50,0,25)
+    toggleBtn.Position = UDim2.new(0.75,0,0.5,-12)
     toggleBtn.BackgroundColor3 = default and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-    toggleBtn.Text = ""
     toggleBtn.Parent = frame
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0,12)
     corner.Parent = toggleBtn
 
     local state = default
-
-    toggleBtn.MouseButton1Click:Connect(function()
-        state = not state
-        toggleBtn.BackgroundColor3 = state and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-        if callback then callback(state) end
-    end)
-
-    table.insert(self.Elements, frame)
-    return frame
-end
-
--- Add Slider
-function Library:AddSlider(text, min, max, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 40)
-    frame.Position = UDim2.new(0, 10, 0, #self.Elements*50 + 10)
-    frame.BackgroundTransparency = 1
-    frame.Parent = self.MainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
-    label.Position = UDim2.new(0,0,0,0)
-    label.Text = text.." "..tostring(default)
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.BackgroundTransparency = 1
-    label.TextScaled = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    local barBg = Instance.new("Frame")
-    barBg.Size = UDim2.new(0.55, 0, 0.3, 0)
-    barBg.Position = UDim2.new(0.45,0,0.35,0)
-    barBg.BackgroundColor3 = Color3.fromRGB(80,80,80)
-    barBg.Parent = frame
-
-    local barFill = Instance.new("Frame")
-    barFill.Size = UDim2.new((default-min)/(max-min), 1, 1, 0)
-    barFill.BackgroundColor3 = Color3.fromRGB(0,170,255)
-    barFill.Parent = barBg
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,6)
-    corner.Parent = barBg
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0,6)
-    fillCorner.Parent = barFill
-
-    local dragging = false
-    barBg.InputBegan:Connect(function(input)
+    toggleBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-        end
-    end)
-    barBg.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-    barBg.InputChanged:Connect(function(input)
-        if dragging then
-            local relative = math.clamp((input.Position.X - barBg.AbsolutePosition.X)/barBg.AbsoluteSize.X, 0, 1)
-            barFill.Size = UDim2.new(relative,0,1,0)
-            local value = min + relative*(max-min)
-            label.Text = text.." "..tostring(math.floor(value))
-            if callback then callback(value) end
+            state = not state
+            local color = state and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+            tween(toggleBtn,{BackgroundColor3 = color},0.2)
+            if callback then callback(state) end
         end
     end)
 
@@ -193,128 +154,17 @@ function Library:AddSlider(text, min, max, default, callback)
     return frame
 end
 
--- Add Input Box
-function Library:AddInput(text, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 40)
-    frame.Position = UDim2.new(0, 10, 0, #self.Elements*50 + 10)
-    frame.BackgroundTransparency = 1
-    frame.Parent = self.MainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4,0,1,0)
-    label.Position = UDim2.new(0,0,0,0)
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.BackgroundTransparency = 1
-    label.TextScaled = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    local inputBox = Instance.new("TextBox")
-    inputBox.Size = UDim2.new(0.55,0,1,0)
-    inputBox.Position = UDim2.new(0.45,0,0,0)
-    inputBox.Text = default or ""
-    inputBox.ClearTextOnFocus = false
-    inputBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    inputBox.TextColor3 = Color3.fromRGB(255,255,255)
-    inputBox.TextScaled = true
-    inputBox.Parent = frame
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,6)
-    corner.Parent = inputBox
-
-    inputBox.FocusLost:Connect(function(enterPressed)
-        if callback then callback(inputBox.Text) end
-    end)
-
-    table.insert(self.Elements, frame)
-    return frame
-end
-
--- Add Dropdown
-function Library:AddDropdown(text, options, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 40)
-    frame.Position = UDim2.new(0,10,0,#self.Elements*50+10)
-    frame.BackgroundTransparency = 1
-    frame.Parent = self.MainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.5,0,1,0)
-    label.Position = UDim2.new(0,0,0,0)
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.BackgroundTransparency = 1
-    label.TextScaled = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.5,0,1,0)
-    button.Position = UDim2.new(0.5,0,0,0)
-    button.Text = options[1] or ""
-    button.TextScaled = true
-    button.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    button.TextColor3 = Color3.fromRGB(255,255,255)
-    button.Parent = frame
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,6)
-    corner.Parent = button
-
-    local dropFrame = Instance.new("Frame")
-    dropFrame.Size = UDim2.new(1,0,0,#options*40)
-    dropFrame.Position = UDim2.new(0,0,1,0)
-    dropFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    dropFrame.Visible = false
-    dropFrame.Parent = button
-
-    local dropCorner = Instance.new("UICorner")
-    dropCorner.CornerRadius = UDim.new(0,6)
-    dropCorner.Parent = dropFrame
-
-    for i,opt in ipairs(options) do
-        local optBtn = Instance.new("TextButton")
-        optBtn.Size = UDim2.new(1,0,0,40)
-        optBtn.Position = UDim2.new(0,0,(i-1)*40,0)
-        optBtn.Text = opt
-        optBtn.TextColor3 = Color3.fromRGB(255,255,255)
-        optBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-        optBtn.TextScaled = true
-        optBtn.Parent = dropFrame
-
-        local optCorner = Instance.new("UICorner")
-        optCorner.CornerRadius = UDim.new(0,6)
-        optCorner.Parent = optBtn
-
-        optBtn.MouseButton1Click:Connect(function()
-            button.Text = opt
-            dropFrame.Visible = false
-            if callback then callback(opt) end
-        end)
-    end
-
-    button.MouseButton1Click:Connect(function()
-        dropFrame.Visible = not dropFrame.Visible
-    end)
-
-    table.insert(self.Elements, frame)
-    return frame
-end
-
--- Set element property
+-- Set method
 function Library:Set(element, property, value)
     if element and element[property] ~= nil then
         element[property] = value
     end
 end
 
--- Refresh positions
+-- Refresh method
 function Library:Refresh()
     for i, elem in ipairs(self.Elements) do
-        elem.Position = UDim2.new(0,10,0,(i-1)*50+10)
+        elem.Position = UDim2.new(0,10,0,(i-1)*55 +10)
     end
 end
 
