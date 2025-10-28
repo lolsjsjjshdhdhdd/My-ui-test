@@ -1,144 +1,227 @@
---// Small Tora-Style UI Library
-local Library = {}
-
+--// ModernMiniUI Library
+local ModernMiniUI = {}
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 
---== Core Function ==--
-function Library:CreateWindow(title)
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "MiniToraUI"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.Parent = game:GetService("CoreGui")
+function ModernMiniUI:CreateWindow(title)
+	local ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.Name = "ModernMiniUI"
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.IgnoreGuiInset = true
+	ScreenGui.Parent = game:GetService("CoreGui")
 
-    local MainFrame = Instance.new("Frame")
-    MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-    MainFrame.Size = UDim2.new(0, 220, 0, 30)
-    MainFrame.Position = UDim2.new(0.5, -110, 0.4, 0)
-    MainFrame.Active = true
-    MainFrame.Draggable = true
-    MainFrame.Parent = ScreenGui
+	local Main = Instance.new("Frame")
+	Main.Size = UDim2.new(0, 250, 0, 40)
+	Main.Position = UDim2.new(0.5, -125, 0.4, 0)
+	Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	Main.Active, Main.Draggable = true, true
+	Main.Parent = ScreenGui
 
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0,5)
-    UICorner.Parent = MainFrame
+	local MainCorner = Instance.new("UICorner", Main)
+	MainCorner.CornerRadius = UDim.new(0, 10)
 
-    local Title = Instance.new("TextLabel")
-    Title.Text = title or "Mini UI"
-    Title.TextColor3 = Color3.fromRGB(255,255,255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 14
-    Title.Size = UDim2.new(1,0,1,0)
-    Title.BackgroundTransparency = 1
-    Title.Parent = MainFrame
+	local Title = Instance.new("TextLabel")
+	Title.Text = title or "Modern UI"
+	Title.Font = Enum.Font.GothamBold
+	Title.TextSize = 16
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.BackgroundTransparency = 1
+	Title.Size = UDim2.new(1, 0, 1, 0)
+	Title.Parent = Main
 
-    local ContentFrame = Instance.new("Frame")
-    ContentFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    ContentFrame.Position = UDim2.new(0,0,1,0)
-    ContentFrame.Size = UDim2.new(1,0,0,0)
-    ContentFrame.ClipsDescendants = true
-    ContentFrame.Parent = MainFrame
+	local Content = Instance.new("Frame")
+	Content.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	Content.Size = UDim2.new(1, 0, 0, 0)
+	Content.Position = UDim2.new(0, 0, 1, 0)
+	Content.ClipsDescendants = true
+	Content.Parent = Main
 
-    local Layout = Instance.new("UIListLayout")
-    Layout.Padding = UDim.new(0,5)
-    Layout.Parent = ContentFrame
+	local ContentCorner = Instance.new("UICorner", Content)
+	ContentCorner.CornerRadius = UDim.new(0, 10)
 
-    local open = false
-    Title.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            open = not open
-            TweenService:Create(ContentFrame, TweenInfo.new(0.3), {
-                Size = open and UDim2.new(1,0,0, Layout.AbsoluteContentSize.Y + 10) or UDim2.new(1,0,0,0)
-            }):Play()
-        end
-    end)
+	local Layout = Instance.new("UIListLayout", Content)
+	Layout.Padding = UDim.new(0, 6)
+	Layout.FillDirection = Enum.FillDirection.Vertical
 
-    local folder = {}
-    function folder:AddButton(options)
-        local Button = Instance.new("TextButton")
-        Button.Text = options.text or "Button"
-        Button.Font = Enum.Font.Gotham
-        Button.TextColor3 = Color3.fromRGB(255,255,255)
-        Button.BackgroundColor3 = Color3.fromRGB(40,40,40)
-        Button.Size = UDim2.new(1,0,0,25)
-        Button.Parent = ContentFrame
+	local open = false
+	Title.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
+			open = not open
+			local goal = open and UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y + 10) or UDim2.new(1, 0, 0, 0)
+			TweenService:Create(Content, TweenInfo.new(0.25), {Size = goal}):Play()
+		end
+	end)
 
-        local UIC = Instance.new("UICorner")
-        UIC.CornerRadius = UDim.new(0,4)
-        UIC.Parent = Button
+	local folder = {}
 
-        Button.MouseButton1Click:Connect(function()
-            if options.callback then
-                pcall(options.callback)
-            end
-        end)
-        return Button
-    end
+	-- Button
+	function folder:AddButton(opt)
+		local btn = Instance.new("TextButton")
+		btn.Text = opt.text or "Button"
+		btn.Size = UDim2.new(1, -10, 0, 30)
+		btn.Position = UDim2.new(0, 5, 0, 0)
+		btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.Font = Enum.Font.Gotham
+		btn.TextSize = 14
+		btn.Parent = Content
+		Instance.new("UICorner", btn)
 
-    function folder:AddToggle(options)
-        local Toggle = Instance.new("TextButton")
-        Toggle.Text = (options.text or "Toggle") .. ": OFF"
-        Toggle.Font = Enum.Font.Gotham
-        Toggle.TextColor3 = Color3.fromRGB(255,255,255)
-        Toggle.BackgroundColor3 = Color3.fromRGB(40,40,40)
-        Toggle.Size = UDim2.new(1,0,0,25)
-        Toggle.Parent = ContentFrame
+		btn.MouseButton1Click:Connect(function()
+			if opt.callback then pcall(opt.callback) end
+		end)
+		return btn
+	end
 
-        local state = false
-        function Toggle:Set(value)
-            state = value
-            Toggle.Text = (options.text or "Toggle") .. ": " .. (state and "ON" or "OFF")
-            if options.callback then
-                pcall(options.callback, state)
-            end
-        end
+	-- Toggle
+	function folder:AddToggle(opt)
+		local tog = Instance.new("TextButton")
+		tog.Text = (opt.text or "Toggle") .. ": OFF"
+		tog.Size = UDim2.new(1, -10, 0, 30)
+		tog.Position = UDim2.new(0, 5, 0, 0)
+		tog.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		tog.TextColor3 = Color3.fromRGB(255, 255, 255)
+		tog.Font = Enum.Font.Gotham
+		tog.TextSize = 14
+		tog.Parent = Content
+		Instance.new("UICorner", tog)
 
-        Toggle.MouseButton1Click:Connect(function()
-            Toggle:Set(not state)
-        end)
+		local state = false
+		function tog:Set(v)
+			state = v
+			tog.Text = (opt.text or "Toggle") .. ": " .. (state and "ON" or "OFF")
+			if opt.callback then pcall(opt.callback, state) end
+		end
 
-        return Toggle
-    end
+		tog.MouseButton1Click:Connect(function() tog:Set(not state) end)
+		return tog
+	end
 
-    function folder:AddDropdown(options)
-        local Drop = Instance.new("TextButton")
-        Drop.Text = options.text or "Dropdown"
-        Drop.Font = Enum.Font.Gotham
-        Drop.TextColor3 = Color3.fromRGB(255,255,255)
-        Drop.BackgroundColor3 = Color3.fromRGB(40,40,40)
-        Drop.Size = UDim2.new(1,0,0,25)
-        Drop.Parent = ContentFrame
+	-- Dropdown
+	function folder:AddDropdown(opt)
+		local drop = Instance.new("TextButton")
+		drop.Text = opt.text or "Dropdown"
+		drop.Size = UDim2.new(1, -10, 0, 30)
+		drop.Position = UDim2.new(0, 5, 0, 0)
+		drop.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		drop.TextColor3 = Color3.fromRGB(255, 255, 255)
+		drop.Font = Enum.Font.Gotham
+		drop.TextSize = 14
+		drop.Parent = Content
+		Instance.new("UICorner", drop)
 
-        local list = options.values or {}
-        local current = list[1] or "None"
+		local values = opt.values or {}
+		local selected = values[1] or "None"
 
-        function Drop:Set(value)
-            current = value
-            Drop.Text = options.text .. ": " .. tostring(value)
-            if options.callback then
-                pcall(options.callback, value)
-            end
-        end
+		function drop:Set(v)
+			selected = v
+			drop.Text = (opt.text or "Dropdown") .. ": " .. tostring(v)
+			if opt.callback then pcall(opt.callback, v) end
+		end
 
-        function Drop:Refresh(newList)
-            list = newList
-            if not table.find(list, current) then
-                Drop:Set(list[1] or "None")
-            end
-        end
+		function drop:Refresh(newValues)
+			values = newValues
+			if not table.find(values, selected) then
+				drop:Set(values[1] or "None")
+			end
+		end
 
-        Drop.MouseButton1Click:Connect(function()
-            local nextIndex = table.find(list, current) or 0
-            nextIndex = nextIndex + 1
-            if nextIndex > #list then nextIndex = 1 end
-            Drop:Set(list[nextIndex])
-        end)
+		drop.MouseButton1Click:Connect(function()
+			local idx = table.find(values, selected) or 0
+			idx = idx + 1
+			if idx > #values then idx = 1 end
+			drop:Set(values[idx])
+		end)
 
-        return Drop
-    end
+		return drop
+	end
 
-    return folder
+	-- Slider
+	function folder:AddSlider(opt)
+		local frame = Instance.new("Frame")
+		frame.Size = UDim2.new(1, -10, 0, 35)
+		frame.Position = UDim2.new(0, 5, 0, 0)
+		frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		frame.Parent = Content
+		Instance.new("UICorner", frame)
+
+		local label = Instance.new("TextLabel")
+		label.Text = (opt.text or "Slider") .. ": " .. tostring(opt.default or 0)
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 14
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.new(1, -10, 0, 15)
+		label.Position = UDim2.new(0, 5, 0, 0)
+		label.Parent = frame
+
+		local bar = Instance.new("Frame")
+		bar.Size = UDim2.new(1, -10, 0, 5)
+		bar.Position = UDim2.new(0, 5, 0, 20)
+		bar.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+		bar.Parent = frame
+		Instance.new("UICorner", bar)
+
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new(0, 0, 1, 0)
+		fill.BackgroundColor3 = Color3.fromRGB(90, 170, 255)
+		fill.Parent = bar
+		Instance.new("UICorner", fill)
+
+		local min, max = opt.min or 0, opt.max or 100
+		local value = opt.default or min
+
+		function frame:Set(v)
+			value = math.clamp(v, min, max)
+			label.Text = (opt.text or "Slider") .. ": " .. tostring(math.floor(value))
+			fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+			if opt.callback then pcall(opt.callback, value) end
+		end
+
+		local dragging = false
+		bar.InputBegan:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+		end)
+		UIS.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+		end)
+		UIS.InputChanged:Connect(function(i)
+			if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+				local pos = (i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X
+				frame:Set(min + (max - min) * math.clamp(pos, 0, 1))
+			end
+		end)
+
+		frame:Set(value)
+		return frame
+	end
+
+	-- TextBox
+	function folder:AddBox(opt)
+		local box = Instance.new("TextBox")
+		box.Text = opt.placeholder or "Enter text..."
+		box.Size = UDim2.new(1, -10, 0, 30)
+		box.Position = UDim2.new(0, 5, 0, 0)
+		box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+		box.TextColor3 = Color3.fromRGB(255, 255, 255)
+		box.Font = Enum.Font.Gotham
+		box.TextSize = 14
+		box.Parent = Content
+		Instance.new("UICorner", box)
+
+		function box:Set(v)
+			box.Text = tostring(v)
+			if opt.callback then pcall(opt.callback, box.Text) end
+		end
+
+		box.FocusLost:Connect(function()
+			if opt.callback then pcall(opt.callback, box.Text) end
+		end)
+
+		return box
+	end
+
+	return folder
 end
 
-return Library
+return ModernMiniUI
