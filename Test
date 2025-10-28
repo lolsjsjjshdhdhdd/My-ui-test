@@ -1,174 +1,376 @@
-local Library = {}
+-- ToraLikeUI.lua
+-- A Tora-like UI library with reliable Refresh() and Set() on dropdown/list controls.
+-- Usage: local ToraLike = require(path_to_this_file); local win = ToraLike:CreateWindow("Title")
 
-function Library:CreateUI(title)
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "ModernUILib"
-    ScreenGui.ResetOnSpawn = false
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 
-    -- ✅ FIX 1: safer parenting (works in LocalScript + exploit env)
-    local success, playerGui = pcall(function()
-        return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    end)
-    if success and playerGui then
-        ScreenGui.Parent = playerGui
-    else
-        ScreenGui.Parent = game:GetService("CoreGui")
-    end
+local ToraLike = {}
+ToraLike.__index = ToraLike
 
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0, 250, 0, 300)
-    Frame.Position = UDim2.new(0.5, -125, 0.5, -150)
-    Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Frame.BorderSizePixel = 0
-    Frame.Active = true
-    Frame.Draggable = true
-    Frame.Parent = ScreenGui
-
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 40)
-    Title.BackgroundTransparency = 1
-    Title.Text = title or "Modern UI"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 20
-    Title.Parent = Frame
-
-    local Container = Instance.new("Frame")
-    Container.Position = UDim2.new(0, 0, 0, 40)
-    Container.Size = UDim2.new(1, 0, 1, -40)
-    Container.BackgroundTransparency = 1
-    Container.Parent = Frame
-
-    -- Elements
-    function Library:AddButton(text, callback)
-        local Button = Instance.new("TextButton")
-        Button.Size = UDim2.new(1, -10, 0, 30)
-        Button.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
-        Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Button.Text = text
-        Button.Font = Enum.Font.Gotham
-        Button.TextSize = 16
-        Button.Parent = Container
-        Button.MouseButton1Click:Connect(function()
-            if callback then pcall(callback) end
-        end)
-    end
-
-    function Library:AddToggle(text, default, callback)
-        local Toggle = Instance.new("TextButton")
-        Toggle.Size = UDim2.new(1, -10, 0, 30)
-        Toggle.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
-        Toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Toggle.Text = text .. ": " .. tostring(default)
-        Toggle.Font = Enum.Font.Gotham
-        Toggle.TextSize = 16
-        Toggle.Parent = Container
-        local toggled = default
-        Toggle.MouseButton1Click:Connect(function()
-            toggled = not toggled
-            Toggle.Text = text .. ": " .. tostring(toggled)
-            if callback then pcall(callback, toggled) end
-        end)
-    end
-
-    function Library:AddLabel(text)
-        local Label = Instance.new("TextLabel")
-        Label.Size = UDim2.new(1, -10, 0, 30)
-        Label.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
-        Label.BackgroundTransparency = 1
-        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Label.Text = text
-        Label.Font = Enum.Font.Gotham
-        Label.TextSize = 16
-        Label.Parent = Container
-    end
-
-    function Library:AddSlider(text, min, max, default, callback)
-        local Holder = Instance.new("Frame")
-        Holder.Size = UDim2.new(1, -10, 0, 40)
-        Holder.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 45)
-        Holder.BackgroundTransparency = 1
-        Holder.Parent = Container
-
-        local Label = Instance.new("TextLabel")
-        Label.Size = UDim2.new(1, 0, 0, 20)
-        Label.BackgroundTransparency = 1
-        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Label.Text = text
-        Label.Font = Enum.Font.Gotham
-        Label.TextSize = 14
-        Label.Parent = Holder
-
-        local Bar = Instance.new("Frame")
-        Bar.Position = UDim2.new(0, 0, 0, 20)
-        Bar.Size = UDim2.new(1, 0, 0, 10)
-        Bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Bar.Parent = Holder
-
-        local Fill = Instance.new("Frame")
-        -- ✅ FIX 2: safe math handling
-        local ratio = 0
-        if type(min) == "number" and type(max) == "number" and max > min then
-            ratio = ((default or min) - min) / (max - min)
-        end
-        Fill.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
-        Fill.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
-        Fill.Parent = Bar
-
-        local UserInputService = game:GetService("UserInputService")
-        local dragging = false
-
-        local function update(input)
-            if Bar.AbsoluteSize.X == 0 then return end
-            local pos = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-            Fill.Size = UDim2.new(pos, 0, 1, 0)
-            local val = math.floor(min + (max - min) * pos)
-            if callback then pcall(callback, val) end
-        end
-
-        Bar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                update(input)
-            end
-        end)
-
-        Bar.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                update(input)
-            end
-        end)
-    end
-
-    function Library:AddList(options)
-        local Drop = Instance.new("TextButton")
-        Drop.Size = UDim2.new(1, -10, 0, 30)
-        Drop.Position = UDim2.new(0, 5, 0, #Container:GetChildren() * 35)
-        Drop.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Drop.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Drop.Text = options.text or "List"
-        Drop.Font = Enum.Font.Gotham
-        Drop.TextSize = 16
-        Drop.Parent = Container
-
-        Drop.MouseButton1Click:Connect(function()
-            if options.values then
-                for _, val in ipairs(options.values) do
-                    print("Selected:", val)
-                end
-            end
-        end)
-    end
-
-    return Library
+-- ======= Utilities =======
+local function safeDestroy(obj)
+	if not obj then return end
+	pcall(function()
+		if typeof(obj) == "Instance" then
+			obj:Destroy()
+			return
+		end
+		if type(obj) == "table" then
+			if obj.Instance and typeof(obj.Instance) == "Instance" then
+				obj.Instance:Destroy()
+				return
+			end
+			if type(obj.Destroy) == "function" then
+				obj:Destroy()
+				return
+			end
+			for _, v in pairs(obj) do
+				if typeof(v) == "Instance" then
+					pcall(function() v:Destroy() end)
+				end
+			end
+		end
+	end)
 end
 
-return Library
+local function createDefaultFontLabel(parent, props)
+	local lbl = Instance.new("TextLabel")
+	lbl.BackgroundTransparency = 1
+	lbl.TextColor3 = props.TextColor3 or Color3.new(1,1,1)
+	lbl.TextSize = props.TextSize or 14
+	lbl.Font = props.Font or Enum.Font.SourceSans
+	lbl.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+	lbl.Text = props.Text or ""
+	lbl.Size = props.Size or UDim2.new(1,0,0,20)
+	lbl.Position = props.Position or UDim2.new(0,0,0,0)
+	lbl.Parent = parent
+	return lbl
+end
+
+-- Simple theme values (you can tweak)
+local THEME = {
+	WindowBg = Color3.fromRGB(22, 22, 22),
+	FolderBg = Color3.fromRGB(28, 28, 28),
+	ItemBg = Color3.fromRGB(40, 40, 40),
+	Text = Color3.new(1,1,1),
+	Accent = Color3.fromRGB(100, 150, 255)
+}
+
+-- ======= Window / Folder creation =======
+function ToraLike:CreateWindow(title)
+	local selfWindow = {}
+	selfWindow.folders = {}
+	selfWindow.gui = Instance.new("ScreenGui")
+	selfWindow.gui.Name = ("ToraLikeUI_%s"):format(title:gsub("%s+","_"))
+	selfWindow.gui.ResetOnSpawn = false
+	selfWindow.gui.Parent = CoreGui
+
+	-- Main window frame
+	local wnd = Instance.new("Frame")
+	wnd.Size = UDim2.new(0, 420, 0, 320)
+	wnd.Position = UDim2.new(0.5, -210, 0.5, -160)
+	wnd.BackgroundColor3 = THEME.WindowBg
+	wnd.BorderSizePixel = 0
+	wnd.Parent = selfWindow.gui
+	selfWindow.mainFrame = wnd
+
+	-- Title bar
+	local titleLbl = createDefaultFontLabel(wnd, {
+		Size = UDim2.new(1, 0, 0, 28),
+		Position = UDim2.new(0,0,0,0),
+		Text = title,
+		TextSize = 18,
+		Font = Enum.Font.SourceSansBold
+	})
+	titleLbl.Parent = wnd
+
+	-- Content holder
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, -12, 1, -36)
+	content.Position = UDim2.new(0, 6, 0, 32)
+	content.BackgroundTransparency = 1
+	content.Parent = wnd
+	selfWindow.content = content
+
+	-- list of children layout
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.Parent = content
+
+	-- API: AddFolder
+	function selfWindow:AddFolder(name)
+		local folder = {}
+		folder.name = name
+		folder.items = {}
+
+		local folderFrame = Instance.new("Frame")
+		folderFrame.Size = UDim2.new(1, 0, 0, 28)
+		folderFrame.BackgroundColor3 = THEME.FolderBg
+		folderFrame.BorderSizePixel = 0
+		folderFrame.Parent = content
+
+		local header = createDefaultFontLabel(folderFrame, {
+			Size = UDim2.new(1, -8, 0, 28),
+			Position = UDim2.new(0,4,0,0),
+			Text = name,
+			TextSize = 15,
+			Font = Enum.Font.SourceSansBold
+		})
+		header.Parent = folderFrame
+
+		local itemsHolder = Instance.new("Frame")
+		itemsHolder.Size = UDim2.new(1, 0, 0, 0)
+		itemsHolder.Position = UDim2.new(0, 0, 0, 34)
+		itemsHolder.BackgroundTransparency = 1
+		itemsHolder.Parent = folderFrame
+		local itemsLayout = Instance.new("UIListLayout")
+		itemsLayout.Padding = UDim.new(0,6)
+		itemsLayout.Parent = itemsHolder
+
+		-- ensure folderFrame expands to hold items
+		local function updateFolderSize()
+			local total = 0
+			for _, child in ipairs(itemsHolder:GetChildren()) do
+				if child:IsA("Frame") or child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("ScrollingFrame") then
+					total = total + child.Size.Y.Offset + 6
+				end
+			end
+			folderFrame.Size = UDim2.new(1, 0, 0, 34 + total)
+		end
+		itemsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateFolderSize)
+
+		-- AddButton: supports either folder:AddButton("text", cb) or folder:AddButton{...}
+		function folder:AddButton(a, b)
+			local text, cb
+			if type(a) == "table" then
+				text = a.text or a.Text or "Button"
+				cb = a.callback or a.callbackFunc or a.callbackFunction
+			else
+				text = a
+				cb = b
+			end
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, 0, 0, 30)
+			btn.BackgroundColor3 = THEME.ItemBg
+			btn.BorderSizePixel = 0
+			btn.Text = text or "Button"
+			btn.Font = Enum.Font.SourceSans
+			btn.TextSize = 14
+			btn.TextColor3 = THEME.Text
+			btn.Parent = itemsHolder
+
+			btn.MouseButton1Click:Connect(function()
+				if type(cb) == "function" then
+					pcall(cb)
+				end
+			end)
+
+			table.insert(folder.items, {type="button", instance=btn})
+			updateFolderSize()
+			return btn
+		end
+
+		-- AddList / AddDropdown: supports table signature, returns an object with Refresh() and Set()
+		function folder:AddList(opts)
+			-- Accept either arguments or table
+			local name = "List"
+			local values = {}
+			local callback = nil
+			local open = false
+			if type(opts) == "table" and not opts.text and not opts.values and opts[1] then
+				-- rare fallback
+				name = opts[1] or name
+				values = opts[2] or values
+			elseif type(opts) == "table" then
+				name = opts.text or opts.name or name
+				values = opts.values or opts.items or values
+				callback = opts.callback or opts.onSelect
+				open = opts.open or false
+			elseif type(opts) == "string" then
+				-- signature like AddList("name", values, callback)
+				name = opts
+				values = select(2, ...) or values
+			end
+
+			-- holder for the list UI
+			local holder = Instance.new("Frame")
+			holder.Size = UDim2.new(1, 0, 0, 28)
+			holder.BackgroundTransparency = 1
+			holder.Parent = itemsHolder
+
+			local label = createDefaultFontLabel(holder, {
+				Size = UDim2.new(0.45, 0, 0, 24),
+				Position = UDim2.new(0, 8, 0, 2),
+				Text = name,
+				TextSize = 14
+			})
+
+			-- main select button
+			local selectBtn = Instance.new("TextButton")
+			selectBtn.Size = UDim2.new(1, -110, 0, 28)
+			selectBtn.Position = UDim2.new(0, 100, 0, 0)
+			selectBtn.BackgroundColor3 = THEME.ItemBg
+			selectBtn.BorderSizePixel = 0
+			selectBtn.Text = "Select"
+			selectBtn.Font = Enum.Font.SourceSans
+			selectBtn.TextSize = 14
+			selectBtn.TextColor3 = THEME.Text
+			selectBtn.Parent = holder
+
+			-- caret
+			local caret = Instance.new("TextLabel")
+			caret.Size = UDim2.new(0, 18, 1, 0)
+			caret.Position = UDim2.new(1, -22, 0, 0)
+			caret.BackgroundTransparency = 1
+			caret.Text = "▾"
+			caret.Font = Enum.Font.SourceSansBold
+			caret.TextSize = 16
+			caret.TextColor3 = THEME.Text
+			caret.Parent = selectBtn
+
+			-- dropdown list (scrolling)
+			local listFrame = Instance.new("ScrollingFrame")
+			listFrame.Size = UDim2.new(1, 0, 0, 0)
+			listFrame.Position = UDim2.new(0, 0, 1, 6)
+			listFrame.CanvasSize = UDim2.new(0,0,0,0)
+			listFrame.ScrollBarThickness = 6
+			listFrame.BackgroundColor3 = THEME.ItemBg
+			listFrame.BorderSizePixel = 0
+			listFrame.Visible = open
+			listFrame.Parent = holder
+
+			local listLayout = Instance.new("UIListLayout")
+			listLayout.Padding = UDim.new(0, 2)
+			listLayout.Parent = listFrame
+
+			-- internal state
+			local state = {
+				values = values or {},
+			.selected = nil,
+			.callback = callback,
+			.holder = holder,
+				selectBtn = selectBtn,
+				listFrame = listFrame,
+				listLayout = listLayout
+			}
+
+			-- helper to populate listFrame
+			local function populate()
+				-- clear children
+				for _,child in ipairs(listFrame:GetChildren()) do
+					if child ~= listLayout then
+						safeDestroy(child)
+					end
+				end
+				for i, v in ipairs(state.values) do
+					local btn = Instance.new("TextButton")
+					btn.Size = UDim2.new(1, -8, 0, 26)
+					btn.Position = UDim2.new(0, 4, 0, (i-1)*28)
+					btn.BackgroundColor3 = THEME.ItemBg
+					btn.BorderSizePixel = 0
+					btn.Text = tostring(v)
+					btn.Font = Enum.Font.SourceSans
+					btn.TextSize = 14
+					btn.TextColor3 = THEME.Text
+					btn.Parent = listFrame
+
+					btn.MouseButton1Click:Connect(function()
+						state.selected = v
+						selectBtn.Text = tostring("Selected: "..v)
+						listFrame.Visible = false
+						caret.Text = "▾"
+						if type(state.callback) == "function" then
+							pcall(state.callback, v)
+						end
+					end)
+				end
+
+				-- update canvas + size
+				RunService.Heartbeat:Wait()
+				local content = listLayout.AbsoluteContentSize
+				local desiredHeight = math.clamp(content.Y + 8, 0, 28 * math.min(#state.values, 8))
+				listFrame.Size = UDim2.new(1, 0, 0, desiredHeight)
+				listFrame.CanvasSize = UDim2.new(0, 0, 0, content.Y + 6)
+				holder.Size = UDim2.new(1, 0, 0, 28 + (listFrame.Visible and desiredHeight + 6 or 0))
+			end
+
+			-- toggle open
+			selectBtn.MouseButton1Click:Connect(function()
+				listFrame.Visible = not listFrame.Visible
+				caret.Text = listFrame.Visible and "▴" or "▾"
+				-- recompute size when opening
+				populate()
+			end)
+
+			-- methods returned to user
+			local public = {}
+
+			function public:Refresh(newValues)
+				state.values = newValues or {}
+				populate()
+				return true
+			end
+
+			function public:Set(valueOrIndex)
+				local v = valueOrIndex
+				if type(valueOrIndex) == "number" then
+					v = state.values[valueOrIndex]
+				end
+				if v == nil then return false end
+				state.selected = v
+				selectBtn.Text = tostring("Selected: "..v)
+				if type(state.callback) == "function" then
+					pcall(state.callback, v)
+				end
+				return true
+			end
+
+			function public:Destroy()
+				safeDestroy(holder)
+			end
+
+			-- initial populate
+			populate()
+
+			-- record in folder and return public API object
+			table.insert(folder.items, {type="list", ref=public, instance=holder})
+			updateFolderSize()
+			return public
+		end
+
+		-- expose folder API
+		folder._internal = {
+			frame = folderFrame,
+			itemsHolder = itemsHolder,
+			itemsLayout = itemsLayout
+		}
+
+		-- finish
+		table.insert(selfWindow.folders, folder)
+		return folder
+	end
+
+	-- convenience: Init / Initialize
+	function selfWindow:Init()
+		-- no-op placeholder in case caller expects it
+		return true
+	end
+
+	-- function to destroy the window
+	function selfWindow:Destroy()
+		safeDestroy(selfWindow.gui)
+	end
+
+	setmetatable(selfWindow, {__index = ToraLike})
+	return selfWindow
+end
+
+-- library-level convenience (alias)
+function ToraLike:CreateWindow(title)
+	return ToraLike.CreateWindow(self, title)
+end
+
+return ToraLike
