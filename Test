@@ -63,11 +63,14 @@ function Library:CreateWindow(title)
     TitleLabel.Position = UDim2.new(0,10,0,0)
     TitleLabel.Parent = Frame
 
-    TitleLabel.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Frame.Visible = not Frame.Visible
-        end
-    end)
+    -- Fixed mobile-safe toggle
+TitleLabel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        Frame.Visible = not Frame.Visible
+        input:Capture() -- prevent the touch from affecting other UI elements
+    end
+end)
+
 
     UserInputService.InputBegan:Connect(function(input, processed)
         if processed then return end
