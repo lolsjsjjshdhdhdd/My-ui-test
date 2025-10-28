@@ -1,171 +1,272 @@
--- Ultra-Modern Roblox UI Library
+-- Modern Tora-style UI Library
 local Library = {}
 Library.__index = Library
 
--- Services
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Utility tween function
-local function tween(obj, props, time)
-    local t = TweenService:Create(obj, TweenInfo.new(time or 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
-    t:Play()
-    return t
-end
+local Colors = {
+    Main = Color3.fromRGB(30, 30, 30),
+    Accent = Color3.fromRGB(255, 85, 255),
+    Text = Color3.fromRGB(255, 255, 255),
+    ToggleOn = Color3.fromRGB(85, 255, 127),
+    ToggleOff = Color3.fromRGB(255, 85, 85),
+    FolderHeader = Color3.fromRGB(50,50,50)
+}
 
--- Create the UI
-function Library:CreateUI(name)
-    local selfObj = {}
-    setmetatable(selfObj, Library)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ModernUILibrary"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
 
-    -- ScreenGui
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = name or "UltraModernUI"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = PlayerGui
+local ToggleKey = Enum.KeyCode.RightControl
 
-    -- Main Frame
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 300, 0, 400)
-    mainFrame.Position = UDim2.new(1, -310, 0.5, -200)
-    mainFrame.AnchorPoint = Vector2.new(1, 0.5)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Visible = false
-    mainFrame.ClipsDescendants = true
-    mainFrame.Parent = screenGui
+-- Create window
+function Library:CreateWindow(title)
+    local self = setmetatable({}, Library)
+    self.Title = title or "Window"
+    self.Elements = {}
+    self.Folders = {}
 
-    local uicorner = Instance.new("UICorner")
-    uicorner.CornerRadius = UDim.new(0,16)
-    uicorner.Parent = mainFrame
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 400, 0, 300)
+    Frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+    Frame.BackgroundColor3 = Colors.Main
+    Frame.BorderSizePixel = 0
+    Frame.Parent = ScreenGui
+    self.Frame = Frame
 
-    -- Shadow (soft depth effect)
-    local shadow = Instance.new("UIStroke")
-    shadow.Thickness = 1
-    shadow.Color = Color3.fromRGB(60,60,60)
-    shadow.Parent = mainFrame
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, 0, 0, 30)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.TextColor3 = Colors.Text
+    TitleLabel.Text = self.Title
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 20
+    TitleLabel.Parent = Frame
 
-    -- Toggle Button
-    local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 50, 0, 50)
-    toggle.Position = UDim2.new(1, -60, 0, 50)
-    toggle.AnchorPoint = Vector2.new(0.5,0.5)
-    toggle.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    toggle.Text = "☰"
-    toggle.TextColor3 = Color3.fromRGB(0,0,0)
-    toggle.TextScaled = true
-    toggle.Font = Enum.Font.GothamBold
-    toggle.Parent = screenGui
-
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0,12)
-    toggleCorner.Parent = toggle
-
-    toggle.MouseButton1Click:Connect(function()
-        mainFrame.Visible = not mainFrame.Visible
-    end)
-
-    -- Storage
-    selfObj.ScreenGui = screenGui
-    selfObj.MainFrame = mainFrame
-    selfObj.Elements = {}
-
-    return selfObj
-end
-
--- Add a Button
-function Library:AddButton(text, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 45)
-    btn.Position = UDim2.new(0, 10, 0, #self.Elements*55 + 10)
-    btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(240,240,240)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextScaled = true
-    btn.Parent = self.MainFrame
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,12)
-    corner.Parent = btn
-
-    local shadow = Instance.new("UIStroke")
-    shadow.Thickness = 1
-    shadow.Color = Color3.fromRGB(60,60,60)
-    shadow.Parent = btn
-
-    btn.MouseEnter:Connect(function()
-        tween(btn,{BackgroundColor3 = Color3.fromRGB(60,60,60)},0.15)
-    end)
-    btn.MouseLeave:Connect(function()
-        tween(btn,{BackgroundColor3 = Color3.fromRGB(40,40,40)},0.15)
-    end)
-
-    btn.MouseButton1Click:Connect(function()
-        if callback then callback() end
-    end)
-
-    table.insert(self.Elements, btn)
-    return btn
-end
-
--- Add Toggle
-function Library:AddToggle(text, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 45)
-    frame.Position = UDim2.new(0,10,0,#self.Elements*55 +10)
-    frame.BackgroundTransparency = 1
-    frame.Parent = self.MainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7,0,1,0)
-    label.Position = UDim2.new(0,0,0,0)
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(240,240,240)
-    label.TextScaled = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Font = Enum.Font.Gotham
-    label.Parent = frame
-
-    local toggleBtn = Instance.new("Frame")
-    toggleBtn.Size = UDim2.new(0,50,0,25)
-    toggleBtn.Position = UDim2.new(0.75,0,0.5,-12)
-    toggleBtn.BackgroundColor3 = default and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-    toggleBtn.Parent = frame
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,12)
-    corner.Parent = toggleBtn
-
-    local state = default
-    toggleBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            state = not state
-            local color = state and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
-            tween(toggleBtn,{BackgroundColor3 = color},0.2)
-            if callback then callback(state) end
+    -- Window toggle
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        if input.KeyCode == ToggleKey then
+            Frame.Visible = not Frame.Visible
         end
     end)
 
-    table.insert(self.Elements, frame)
-    return frame
-end
+    -- Add Folder function inside window
+    function self:AddFolder(name)
+        local folder = {}
+        folder.Name = name
+        folder.Elements = {}
+        folder.Expanded = true
 
--- Set method
-function Library:Set(element, property, value)
-    if element and element[property] ~= nil then
-        element[property] = value
-    end
-end
+        local Header = Instance.new("TextButton")
+        Header.Size = UDim2.new(1, -20, 0, 30)
+        Header.Position = UDim2.new(0, 10, 0, 40 + (#self.Elements * 40))
+        Header.BackgroundColor3 = Colors.FolderHeader
+        Header.TextColor3 = Colors.Text
+        Header.Text = "▶ "..name
+        Header.Font = Enum.Font.GothamBold
+        Header.TextSize = 16
+        Header.Parent = Frame
 
--- Refresh method
-function Library:Refresh()
-    for i, elem in ipairs(self.Elements) do
-        elem.Position = UDim2.new(0,10,0,(i-1)*55 +10)
+        Header.MouseButton1Click:Connect(function()
+            folder.Expanded = not folder.Expanded
+            if folder.Expanded then
+                Header.Text = "▼ "..name
+                for _, e in ipairs(folder.Elements) do e.Object.Visible = true end
+            else
+                Header.Text = "▶ "..name
+                for _, e in ipairs(folder.Elements) do e.Object.Visible = false end
+            end
+            self:Refresh()
+        end)
+
+        folder.Header = Header
+        table.insert(self.Folders, folder)
+        table.insert(self.Elements, {Type="Folder", Object=Header, Folder=folder})
+
+        -- Add element methods for folder
+        function folder:AddButton(text, callback)
+            local Button = Instance.new("TextButton")
+            Button.Size = UDim2.new(1, -40, 0, 30)
+            Button.BackgroundColor3 = Colors.Accent
+            Button.TextColor3 = Colors.Text
+            Button.Text = text
+            Button.Font = Enum.Font.GothamBold
+            Button.TextSize = 16
+            Button.Parent = Frame
+
+            Button.MouseButton1Click:Connect(callback)
+
+            local element = {Type="Button", Object=Button, Callback=callback, Folder=folder}
+            table.insert(self.Elements, element)
+            table.insert(folder.Elements, element)
+            return element
+        end
+
+        function folder:AddToggle(text, default, callback)
+            local Toggle = Instance.new("TextButton")
+            Toggle.Size = UDim2.new(1, -40, 0, 30)
+            Toggle.BackgroundColor3 = default and Colors.ToggleOn or Colors.ToggleOff
+            Toggle.TextColor3 = Colors.Text
+            Toggle.Text = text
+            Toggle.Font = Enum.Font.GothamBold
+            Toggle.TextSize = 16
+            Toggle.Parent = Frame
+
+            local toggled = default or false
+            Toggle.MouseButton1Click:Connect(function()
+                toggled = not toggled
+                Toggle.BackgroundColor3 = toggled and Colors.ToggleOn or Colors.ToggleOff
+                callback(toggled)
+            end)
+
+            local element = {Type="Toggle", Object=Toggle, Callback=callback, Value=toggled, Folder=folder}
+            table.insert(self.Elements, element)
+            table.insert(folder.Elements, element)
+            return element
+        end
+
+        function folder:AddSlider(text, min, max, default, callback)
+            local SliderFrame = Instance.new("Frame")
+            SliderFrame.Size = UDim2.new(1, -40, 0, 30)
+            SliderFrame.BackgroundColor3 = Colors.Main
+            SliderFrame.BorderSizePixel = 0
+            SliderFrame.Parent = Frame
+
+            local SliderLabel = Instance.new("TextLabel")
+            SliderLabel.Size = UDim2.new(1, 0, 1, 0)
+            SliderLabel.BackgroundTransparency = 1
+            SliderLabel.TextColor3 = Colors.Text
+            SliderLabel.Text = text.." "..default
+            SliderLabel.Font = Enum.Font.GothamBold
+            SliderLabel.TextSize = 16
+            SliderLabel.Parent = SliderFrame
+
+            local dragging = false
+            local SliderBar = Instance.new("Frame")
+            SliderBar.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+            SliderBar.BackgroundColor3 = Colors.Accent
+            SliderBar.BorderSizePixel = 0
+            SliderBar.Parent = SliderFrame
+
+            SliderFrame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+            end)
+            SliderFrame.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local mouseX = input.Position.X - SliderFrame.AbsolutePosition.X
+                    local ratio = math.clamp(mouseX / SliderFrame.AbsoluteSize.X, 0, 1)
+                    local value = math.floor((min + (max-min) * ratio))
+                    SliderBar.Size = UDim2.new(ratio, 0, 1, 0)
+                    SliderLabel.Text = text.." "..value
+                    callback(value)
+                end
+            end)
+
+            local element = {Type="Slider", Object=SliderFrame, Callback=callback, Value=default, Folder=folder}
+            table.insert(self.Elements, element)
+            table.insert(folder.Elements, element)
+            return element
+        end
+
+        function folder:AddDropdown(text, options, callback)
+            local DropdownFrame = Instance.new("Frame")
+            DropdownFrame.Size = UDim2.new(1, -40, 0, 30)
+            DropdownFrame.BackgroundColor3 = Colors.Main
+            DropdownFrame.BorderSizePixel = 0
+            DropdownFrame.Parent = Frame
+
+            local DropdownLabel = Instance.new("TextButton")
+            DropdownLabel.Size = UDim2.new(1, 0, 1, 0)
+            DropdownLabel.BackgroundTransparency = 1
+            DropdownLabel.TextColor3 = Colors.Text
+            DropdownLabel.Text = text.." ▼"
+            DropdownLabel.Font = Enum.Font.GothamBold
+            DropdownLabel.TextSize = 16
+            DropdownLabel.Parent = DropdownFrame
+
+            local Open = false
+            local OptionButtons = {}
+
+            DropdownLabel.MouseButton1Click:Connect(function()
+                Open = not Open
+                if Open then
+                    for i, option in ipairs(options) do
+                        local btn = Instance.new("TextButton")
+                        btn.Size = UDim2.new(1, 0, 0, 30)
+                        btn.Position = UDim2.new(0, 0, 0, 30*i)
+                        btn.BackgroundColor3 = Colors.Accent
+                        btn.TextColor3 = Colors.Text
+                        btn.Text = option
+                        btn.Font = Enum.Font.GothamBold
+                        btn.TextSize = 16
+                        btn.Parent = DropdownFrame
+
+                        btn.MouseButton1Click:Connect(function()
+                            DropdownLabel.Text = text.." "..option.." ▼"
+                            callback(option)
+                            for _, b in ipairs(OptionButtons) do b:Destroy() end
+                            Open = false
+                        end)
+                        table.insert(OptionButtons, btn)
+                    end
+                else
+                    for _, b in ipairs(OptionButtons) do b:Destroy() end
+                    OptionButtons = {}
+                end
+            end)
+
+            local element = {Type="Dropdown", Object=DropdownFrame, Callback=callback, Folder=folder}
+            table.insert(self.Elements, element)
+            table.insert(folder.Elements, element)
+            return element
+        end
+
+        return folder
     end
+
+    -- Refresh method
+    function self:Refresh()
+        local yOffset = 40
+        for _, e in ipairs(self.Elements) do
+            local folder = e.Folder
+            if folder then
+                e.Object.Visible = folder.Expanded
+            end
+        end
+        for _, e in ipairs(self.Elements) do
+            if e.Object.Visible then
+                e.Object.Position = UDim2.new(e.Object.Position.X.Scale, e.Object.Position.X.Offset, 0, yOffset)
+                yOffset = yOffset + 40
+            end
+        end
+    end
+
+    -- Set method
+    function self:Set(name, value)
+        for _, element in ipairs(self.Elements) do
+            if element.Object.Text and element.Object.Text:match(name) then
+                if element.Type == "Toggle" then
+                    element.Value = value
+                    element.Object.BackgroundColor3 = value and Colors.ToggleOn or Colors.ToggleOff
+                    element.Callback(value)
+                elseif element.Type == "Slider" then
+                    element.Value = value
+                    element.Callback(value)
+                elseif element.Type == "Dropdown" then
+                    element.Callback(value)
+                end
+            end
+        end
+    end
+
+    return self
 end
 
 return Library
