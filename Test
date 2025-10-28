@@ -1,1 +1,212 @@
+-- Modern Small Mobile-Friendly Tora-style UI Library
+local Library = {}
+Library.__index = Library
 
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Player = Players.LocalPlayer
+
+local Colors = {
+    Main = Color3.fromRGB(35, 35, 40),
+    Accent = Color3.fromRGB(180, 85, 255),
+    Text = Color3.fromRGB(255, 255, 255),
+    ToggleOn = Color3.fromRGB(85, 255, 127),
+    ToggleOff = Color3.fromRGB(255, 85, 85),
+    FolderHeader = Color3.fromRGB(50, 50, 60)
+}
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ModernMobileUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local ToggleKey = Enum.KeyCode.RightControl
+
+-- Create window
+function Library:CreateWindow(title)
+    local self = setmetatable({}, Library)
+    self.Title = title or "Window"
+    self.Elements = {}
+    self.Folders = {}
+
+    -- Window Frame
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 300, 0, 50) -- start small
+    Frame.Position = UDim2.new(0.5, -150, 0.5, -25)
+    Frame.BackgroundColor3 = Colors.Main
+    Frame.BorderSizePixel = 0
+    Frame.ClipsDescendants = true
+    Frame.AnchorPoint = Vector2.new(0,0)
+    Frame.Parent = ScreenGui
+    self.Frame = Frame
+
+    -- Rounded corners
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 12)
+    UICorner.Parent = Frame
+
+    -- Shadow for modern look
+    local UIShadow = Instance.new("UIStroke")
+    UIShadow.Color = Color3.fromRGB(0,0,0)
+    UIShadow.Thickness = 2
+    UIShadow.Transparency = 0.7
+    UIShadow.Parent = Frame
+
+    -- Title Bar
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, 0, 0, 40)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.TextColor3 = Colors.Text
+    TitleLabel.Text = self.Title
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 20
+    TitleLabel.Parent = Frame
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+    TitleLabel.Position = UDim2.new(0,10,0,0)
+
+    -- Title tap toggle (mobile)
+    TitleLabel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Frame.Visible = not Frame.Visible
+        end
+    end)
+
+    -- Keyboard toggle
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        if input.KeyCode == ToggleKey then
+            Frame.Visible = not Frame.Visible
+        end
+    end)
+
+    -- Add Folder function inside window
+    function self:AddFolder(name)
+        local folder = {}
+        folder.Name = name
+        folder.Elements = {}
+        folder.Expanded = true
+
+        local Header = Instance.new("TextButton")
+        Header.Size = UDim2.new(1, -20, 0, 35)
+        Header.Position = UDim2.new(0, 10, 0, 50 + (#self.Elements * 35))
+        Header.BackgroundColor3 = Colors.FolderHeader
+        Header.TextColor3 = Colors.Text
+        Header.Text = "▶ "..name
+        Header.Font = Enum.Font.GothamBold
+        Header.TextSize = 18
+        Header.AutoButtonColor = false
+        Header.Parent = Frame
+
+        local UICornerH = Instance.new("UICorner")
+        UICornerH.CornerRadius = UDim.new(0,10)
+        UICornerH.Parent = Header
+
+        Header.MouseButton1Click:Connect(function()
+            folder.Expanded = not folder.Expanded
+            if folder.Expanded then
+                Header.Text = "▼ "..name
+                for _, e in ipairs(folder.Elements) do e.Object.Visible = true end
+            else
+                Header.Text = "▶ "..name
+                for _, e in ipairs(folder.Elements) do e.Object.Visible = false end
+            end
+            self:Refresh()
+        end)
+
+        folder.Header = Header
+        table.insert(self.Folders, folder)
+        table.insert(self.Elements, {Type="Folder", Object=Header, Folder=folder})
+
+        -- Methods to add elements inside folder
+        function folder:AddButton(text, callback)
+            local Button = Instance.new("TextButton")
+            Button.Size = UDim2.new(1, -40, 0, 35)
+            Button.BackgroundColor3 = Colors.Accent
+            Button.TextColor3 = Colors.Text
+            Button.Text = text
+            Button.Font = Enum.Font.GothamBold
+            Button.TextSize = 16
+            Button.AutoButtonColor = true
+            Button.Parent = Frame
+
+            local UICornerB = Instance.new("UICorner")
+            UICornerB.CornerRadius = UDim.new(0,10)
+            UICornerB.Parent = Button
+
+            Button.MouseButton1Click:Connect(callback)
+
+            local element = {Type="Button", Object=Button, Callback=callback, Folder=folder}
+            table.insert(self.Elements, element)
+            table.insert(folder.Elements, element)
+            return element
+        end
+
+        function folder:AddToggle(text, default, callback)
+            local Toggle = Instance.new("TextButton")
+            Toggle.Size = UDim2.new(1, -40, 0, 35)
+            Toggle.BackgroundColor3 = default and Colors.ToggleOn or Colors.ToggleOff
+            Toggle.TextColor3 = Colors.Text
+            Toggle.Text = text
+            Toggle.Font = Enum.Font.GothamBold
+            Toggle.TextSize = 16
+            Toggle.AutoButtonColor = true
+            Toggle.Parent = Frame
+
+            local UICornerT = Instance.new("UICorner")
+            UICornerT.CornerRadius = UDim.new(0,10)
+            UICornerT.Parent = Toggle
+
+            local toggled = default or false
+            Toggle.MouseButton1Click:Connect(function()
+                toggled = not toggled
+                Toggle.BackgroundColor3 = toggled and Colors.ToggleOn or Colors.ToggleOff
+                callback(toggled)
+            end)
+
+            local element = {Type="Toggle", Object=Toggle, Callback=callback, Value=toggled, Folder=folder}
+            table.insert(self.Elements, element)
+            table.insert(folder.Elements, element)
+            return element
+        end
+
+        -- You can similarly add mobile-friendly AddSlider and AddDropdown methods here
+
+        return folder
+    end
+
+    -- Refresh positions & auto-resize window
+    function self:Refresh()
+        local yOffset = 50
+        for _, e in ipairs(self.Elements) do
+            if e.Folder then
+                e.Object.Visible = e.Folder.Expanded
+            end
+        end
+        for _, e in ipairs(self.Elements) do
+            if e.Object.Visible then
+                e.Object.Position = UDim2.new(0,10,0,yOffset)
+                yOffset = yOffset + 40
+            end
+        end
+        TweenService:Create(Frame, TweenInfo.new(0.2), {Size=UDim2.new(0,300,0,yOffset+10)}):Play()
+    end
+
+    -- Set method
+    function self:Set(name, value)
+        for _, element in ipairs(self.Elements) do
+            if element.Object.Text and element.Object.Text:match(name) then
+                if element.Type == "Toggle" then
+                    element.Value = value
+                    element.Object.BackgroundColor3 = value and Colors.ToggleOn or Colors.ToggleOff
+                    element.Callback(value)
+                end
+            end
+        end
+    end
+
+    return self
+end
+
+return Library
