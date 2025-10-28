@@ -1,4 +1,4 @@
---// ModernMiniUI Library
+--// ModernMiniUI Library (with toggle button)
 local ModernMiniUI = {}
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
@@ -10,11 +10,26 @@ function ModernMiniUI:CreateWindow(title)
 	ScreenGui.IgnoreGuiInset = true
 	ScreenGui.Parent = game:GetService("CoreGui")
 
+	--// Toggle button
+	local ToggleButton = Instance.new("TextButton")
+	ToggleButton.Name = "ToggleButton"
+	ToggleButton.Size = UDim2.new(0, 40, 0, 40)
+	ToggleButton.Position = UDim2.new(1, -50, 0, 10)
+	ToggleButton.AnchorPoint = Vector2.new(0, 0)
+	ToggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	ToggleButton.Text = "≡"
+	ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	ToggleButton.Font = Enum.Font.GothamBold
+	ToggleButton.TextSize = 18
+	ToggleButton.Parent = ScreenGui
+	Instance.new("UICorner", ToggleButton)
+
 	local Main = Instance.new("Frame")
 	Main.Size = UDim2.new(0, 250, 0, 40)
 	Main.Position = UDim2.new(0.5, -125, 0.4, 0)
 	Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 	Main.Active, Main.Draggable = true, true
+	Main.Visible = false -- Start hidden
 	Main.Parent = ScreenGui
 
 	local MainCorner = Instance.new("UICorner", Main)
@@ -42,6 +57,13 @@ function ModernMiniUI:CreateWindow(title)
 	local Layout = Instance.new("UIListLayout", Content)
 	Layout.Padding = UDim.new(0, 6)
 	Layout.FillDirection = Enum.FillDirection.Vertical
+
+	--// Toggle open/close
+	local menuOpen = false
+	ToggleButton.MouseButton1Click:Connect(function()
+		menuOpen = not menuOpen
+		Main.Visible = menuOpen
+	end)
 
 	local open = false
 	Title.InputBegan:Connect(function(i)
