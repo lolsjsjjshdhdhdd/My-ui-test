@@ -1,128 +1,107 @@
--- Tora-Style Custom UI Library (with Set & Refresh)
--- Made for Mobile + PC
-
+-- Mini Tora Style UI (with Set & Refresh)
 local Library = {}
 
--- Create main window
 function Library:CreateWindow(title)
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "ToraCustomUI"
-    ScreenGui.Parent = game:GetService("CoreGui")
+    local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    local main = Instance.new("Frame", gui)
+    main.Size = UDim2.new(0, 260, 0, 220)
+    main.Position = UDim2.new(0.5, -130, 0.5, -110)
+    main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    main.BorderSizePixel = 0
+    main.Active, main.Draggable = true, true
 
-    local Main = Instance.new("Frame")
-    Main.Size = UDim2.new(0, 420, 0, 280)
-    Main.Position = UDim2.new(0.5, -210, 0.5, -140)
-    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Main.BorderSizePixel = 0
-    Main.Active = true
-    Main.Draggable = true
-    Main.Parent = ScreenGui
+    local titleBar = Instance.new("TextLabel", main)
+    titleBar.Size = UDim2.new(1, 0, 0, 28)
+    titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    titleBar.Text = title or "Mini UI"
+    titleBar.Font = Enum.Font.GothamBold
+    titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleBar.TextSize = 16
 
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 35)
-    Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    Title.Text = title or "Tora Custom UI"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 18
-    Title.Parent = Main
+    local list = Instance.new("Frame", main)
+    list.Size = UDim2.new(1, 0, 1, -28)
+    list.Position = UDim2.new(0, 0, 0, 28)
+    list.BackgroundTransparency = 1
 
-    local Content = Instance.new("Frame")
-    Content.Size = UDim2.new(1, 0, 1, -35)
-    Content.Position = UDim2.new(0, 0, 0, 35)
-    Content.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Content.Parent = Main
-
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Padding = UDim.new(0, 6)
-    UIListLayout.Parent = Content
+    local layout = Instance.new("UIListLayout", list)
+    layout.Padding = UDim.new(0, 4)
 
     local Folder = {}
 
-    -- Add a button
+    -- Button
     function Folder:AddButton(text, callback)
-        local Button = Instance.new("TextButton")
-        Button.Size = UDim2.new(1, -12, 0, 30)
-        Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        Button.Text = text
-        Button.Font = Enum.Font.Gotham
-        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Button.TextSize = 15
-        Button.Parent = Content
-
-        Button.MouseButton1Click:Connect(function()
+        local b = Instance.new("TextButton", list)
+        b.Size = UDim2.new(1, -10, 0, 28)
+        b.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        b.Text = text
+        b.Font = Enum.Font.Gotham
+        b.TextSize = 14
+        b.TextColor3 = Color3.new(1, 1, 1)
+        b.MouseButton1Click:Connect(function()
             if callback then callback() end
         end)
     end
 
-    -- Add a toggle
+    -- Toggle
     function Folder:AddToggle(text, callback)
-        local Toggle = Instance.new("TextButton")
-        Toggle.Size = UDim2.new(1, -12, 0, 30)
-        Toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        Toggle.Text = text .. ": OFF"
-        Toggle.Font = Enum.Font.Gotham
-        Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Toggle.TextSize = 15
-        Toggle.Parent = Content
-
+        local t = Instance.new("TextButton", list)
+        t.Size = UDim2.new(1, -10, 0, 28)
+        t.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        t.Text = text .. ": OFF"
+        t.Font = Enum.Font.Gotham
+        t.TextSize = 14
+        t.TextColor3 = Color3.new(1, 1, 1)
         local state = false
-        Toggle.MouseButton1Click:Connect(function()
+        t.MouseButton1Click:Connect(function()
             state = not state
-            Toggle.Text = text .. ": " .. (state and "ON" or "OFF")
+            t.Text = text .. ": " .. (state and "ON" or "OFF")
             if callback then callback(state) end
         end)
     end
 
-    -- Add a dropdown (with Set & Refresh)
+    -- Dropdown (with Set & Refresh)
     function Folder:AddDropdown(text, options, callback)
-        local Frame = Instance.new("Frame")
-        Frame.Size = UDim2.new(1, -12, 0, 60)
-        Frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        Frame.Parent = Content
+        local f = Instance.new("Frame", list)
+        f.Size = UDim2.new(1, -10, 0, 50)
+        f.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 
-        local Label = Instance.new("TextLabel")
-        Label.Size = UDim2.new(1, 0, 0, 25)
-        Label.BackgroundTransparency = 1
-        Label.Text = text
-        Label.Font = Enum.Font.Gotham
-        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Label.TextSize = 15
-        Label.Parent = Frame
+        local l = Instance.new("TextLabel", f)
+        l.Size = UDim2.new(1, 0, 0, 22)
+        l.BackgroundTransparency = 1
+        l.Text = text
+        l.Font = Enum.Font.Gotham
+        l.TextSize = 14
+        l.TextColor3 = Color3.new(1, 1, 1)
 
-        local DropDown = Instance.new("TextButton")
-        DropDown.Size = UDim2.new(1, -12, 0, 25)
-        DropDown.Position = UDim2.new(0, 6, 0, 30)
-        DropDown.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        DropDown.Text = "Select..."
-        DropDown.Font = Enum.Font.Gotham
-        DropDown.TextColor3 = Color3.fromRGB(255, 255, 255)
-        DropDown.TextSize = 14
-        DropDown.Parent = Frame
+        local btn = Instance.new("TextButton", f)
+        btn.Size = UDim2.new(1, -8, 0, 22)
+        btn.Position = UDim2.new(0, 4, 0, 24)
+        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        btn.Text = "Select..."
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 13
+        btn.TextColor3 = Color3.new(1, 1, 1)
 
-        local currentOptions = options or {}
+        local current = options or {}
 
-        local function RefreshDropdown()
-            -- (Simple version)
-            print("Dropdown refreshed!")
+        local function Set(new)
+            current = new
+            print("Dropdown Set ->", table.concat(current, ", "))
         end
 
-        local function SetDropdown(newOptions)
-            currentOptions = newOptions
-            print("Dropdown updated:", table.concat(currentOptions, ", "))
-            RefreshDropdown()
+        local function Refresh()
+            print("Dropdown Refreshed")
         end
 
-        DropDown.MouseButton1Click:Connect(function()
-            if callback and #currentOptions > 0 then
-                callback(currentOptions[math.random(1, #currentOptions)]) -- random demo
+        btn.MouseButton1Click:Connect(function()
+            if callback and #current > 0 then
+                local pick = current[math.random(1, #current)]
+                btn.Text = pick
+                callback(pick)
             end
         end)
 
-        return {
-            Set = SetDropdown,
-            Refresh = RefreshDropdown,
-        }
+        return { Set = Set, Refresh = Refresh }
     end
 
     return Folder
