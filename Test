@@ -1,103 +1,34 @@
--- ModernMiniUI: Example usage + corrected modern toggle (works with updated library)
+-- ModernTinyUI (self-contained, small, mobile-friendly)
+local ModernTinyUI = {}
 local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
 
--- If you're loading the library via loadstring or ModuleScript, do that above this block.
--- Example:
--- local ModernMiniUI = loadstring(game:HttpGet("https://yourgithub.com/YourName/ModernMiniUI.lua"))()
--- local window = ModernMiniUI:CreateWindow("Modern Controls")
--- (create your controls as before)
-
--- ---------- Floating modern toggle (fixed) ----------
-local ToggleUI = Instance.new("ScreenGui")
-ToggleUI.Name = "ModernMini_Toggle"
-ToggleUI.IgnoreGuiInset = true
-ToggleUI.ResetOnSpawn = false
-ToggleUI.Parent = CoreGui
-
-local ToggleButton = Instance.new("ImageButton")
-ToggleButton.Size = UDim2.new(0, 44, 0, 44)
-ToggleButton.Position = UDim2.new(0, 16, 0, 16)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(30,30,30)
-ToggleButton.BackgroundTransparency = 0
-ToggleButton.AutoButtonColor = true
--- You can replace this image id with any hamburger icon you like
-ToggleButton.Image = "rbxassetid://7072724538"  -- modern hamburger icon
-ToggleButton.ImageColor3 = Color3.fromRGB(255,255,255)
-ToggleButton.Parent = ToggleUI
-ToggleButton.ZIndex = 10
-local corner = Instance.new("UICorner", ToggleButton)
-corner.CornerRadius = UDim.new(0,10)
-
-local stroke = Instance.new("UIStroke", ToggleButton)
-stroke.Color = Color3.fromRGB(70,70,70)
-stroke.Thickness = 1
-
--- helper: find the main UIGroup created by ModernMiniUI
-local function findModernUIGroup()
-	-- ScreenGui name used by the library:
-	local sg = CoreGui:FindFirstChild("ModernMiniUI")
-	if not sg then return nil end
-	-- library creates a Frame child named "UIGroup" that contains the Main frame
-	local grp = sg:FindFirstChild("UIGroup")
-	if grp and grp:IsA("Frame") then
-		return grp
+local function getParent()
+	local pl = Players.LocalPlayer
+	if pl and pl:FindFirstChild("PlayerGui") then
+		return pl:WaitForChild("PlayerGui")
 	end
-	-- fallback: return the ScreenGui itself (so it still toggles)
-	return sg
+	return game:FindFirstChildOfClass("CoreGui") or workspace
 end
 
--- animate open/close (fade + scale)
-local isOpen = true
-local function setOpenState(open)
-	local target = findModernUIGroup()
-	if not target then
-		-- nothing to toggle (library not loaded or name mismatch)
-		return
-	end
-
-	-- If target is a Frame (UIGroup) we tween its transparency via UI objects,
-	-- otherwise toggle ScreenGui.Enabled as fallback.
-	if target:IsA("Frame") then
-		-- create a faux fade by tweening BackgroundTransparency of Main children
-		-- and toggling Visible so tab content is removed from input when closed
-		if open then
-			target.Visible = true
-			for _, child in ipairs(target:GetDescendants()) do
-				if child:IsA("GuiObject") then
-					TweenService:Create(child, TweenInfo.new(0.18, Enum.EasingStyle.Sine), {BackgroundTransparency = child.BackgroundTransparency or 0}):Play()
-					-- text items: reduce TextTransparency to 0
-					if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
-						TweenService:Create(child, TweenInfo.new(0.18, Enum.EasingStyle.Sine), {TextTransparency = 0}):Play()
-					end
-				end
-			end
-		else
-			-- fade out then hide
-			for _, child in ipairs(target:GetDescendants()) do
-				if child:IsA("GuiObject") then
-					TweenService:Create(child, TweenInfo.new(0.16, Enum.EasingStyle.Sine), {
-						BackgroundTransparency = 1,
-						TextTransparency = 1
-					}):Play()
-				end
-			end
-			-- small delay, then hide to disable input
-			task.delay(0.16, function()
-				if target then pcall(function() target.Visible = false end) end
-			end)
-		end
-	else
-		-- fallback: ScreenGui toggle
-		target.Enabled = open
-	end
+-- helper to create UICorner quickly
+local function round(inst, radius)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius or 8)
+	c.Parent = inst
 end
 
--- initial ensure: make UI visible (if library already created)
-setOpenState(true)
+-- Create window, returns folder-like object with element factories
+function ModernTinyUI:CreateWindow(title)
+	local parent = getParent()
+	local ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.Name = "ModernTinyUI"
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.IgnoreGuiInset = true
+	ScreenGui.Parent = parent
 
--- hook up button
-ToggleButton.MouseButton1Click:Connect(function()
-	isOpen = not isOpen
-	setOpenState(isOpen)
-end)
+	-- Main frame
+	local Main = Instance.new("Frame", ScreenGui)
+	Main.Size = UDim2.new(0, 300, 0, 44)
+	Main
