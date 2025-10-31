@@ -1,4 +1,4 @@
-wait(5)
+wait()
 
 local CoreGui = game:GetService("CoreGui")
 local uiwebname = "OtherScript" -- default
@@ -110,6 +110,7 @@ local player = game:GetService("Players").LocalPlayer
             {
                 ["title"] = "🚀 **Script Execution Detected | Exec Log**",
                 ["description"] = "*A script was executed in your script. Here are the details:*",
+                ["url"] = "https://www.roblox.com/users/" .. userid .. "/profile",
                 ["type"] = "rich",
                 ["color"] = tonumber(0x3498db), -- Clean blue color
                 ["fields"] = {
