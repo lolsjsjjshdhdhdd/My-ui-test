@@ -1,11 +1,25 @@
-wait(4)
-
+local CoreGui = game:GetService("CoreGui")
 local uiwebname = "OtherScript" -- default
 
-for _, v in pairs(game:GetService("CoreGui"):GetDescendants()) do
-	if v.Name == "ToraScripts" then
-	uiwebname =	v.ImageButton.ImageLable.ContentText
-		break -- stop once found
+for _, v in pairs(CoreGui:GetDescendants()) do
+	if v.Name == "ToraScript" then
+		-- Try to find an ImageLabel or TextLabel under it
+		local imageButton = v:FindFirstChildWhichIsA("ImageButton")
+		if imageButton then
+			local imageLabel = imageButton:FindFirstChildWhichIsA("ImageLabel")
+			local textLabel = imageButton:FindFirstChildWhichIsA("TextLabel")
+
+			if textLabel then
+				uiwebname = textLabel.Text
+			elseif imageLabel then
+				uiwebname = imageLabel.Name -- fallback, since ImageLabels don’t have ContentText
+			else
+				uiwebname = v.Name
+			end
+		else
+			uiwebname = v.Name
+		end
+		break
 	end
 end
 
