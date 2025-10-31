@@ -1,5 +1,5 @@
 --// Config
-getgenv().whscript = "test cuh"        --Change to the name of your script
+getgenv().whscript = uiname       --Change to the name of your script
 getgenv().webhookexecUrl = "https://discord.com/api/webhooks/1433652611084718100/Jk8ew9avCfZlVDv2srYUuHbNd0u-ZezThoWNkgwgKoMBIxV9DtS3gX9QKc6z634UB3v6"  --Put your Webhook Url here
 getgenv().ExecLogSecret = false                --decide to also log secret section
 
