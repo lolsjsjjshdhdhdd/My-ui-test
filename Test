@@ -1,3 +1,5 @@
+wait(5)
+
 local CoreGui = game:GetService("CoreGui")
 local uiwebname = "OtherScript" -- default
 
