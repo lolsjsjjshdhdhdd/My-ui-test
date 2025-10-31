@@ -1,4 +1,4 @@
-wait(2)
+wait(5)
 
 local uiwebname = "OtherScript" -- default
 
