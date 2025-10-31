@@ -1,4 +1,4 @@
-local uiwebname = game:GetService("CoreGui"):GetChildren()[72].ImageButton.TextLabel.Content.Text
+local uiwebname = game:GetService("CoreGui"):GetChildren()[72].ImageButton.TextLabel.ContentText
 
 --// Config
 getgenv().whscript = uiwebname      --Change to the name of your script
