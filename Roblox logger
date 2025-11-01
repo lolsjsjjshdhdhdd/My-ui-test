@@ -1,3 +1,5 @@
+-- Fun roblox logger
+
 local CoreGui = game:GetService("CoreGui")
 local uiwebname = "OtherScript" -- default
 
@@ -27,7 +29,7 @@ end
 
 --// Config
 getgenv().whscript = uiwebname      --Change to the name of your script
-getgenv().webhookexecUrl = "https://discord.com/api/webhooks/1433652611084718100/Jk8ew9avCfZlVDv2srYUuHbNd0u-ZezThoWNkgwgKoMBIxV9DtS3gX9QKc6z634UB3v6"  --Put your Webhook Url here
+getgenv().webhookexecUrl = "YOUR WEBHOOK URL"  --Put your Webhook Url here
 getgenv().ExecLogSecret = false                --decide to also log secret section
 
 --// Execution Log Script
